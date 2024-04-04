@@ -75,7 +75,4 @@ def make_llm_chain(stocks, vectorstore):
             | llm
             | StrOutputParser()
     )
-
-    # print(rag_chain.invoke("삼성전자 최신 뉴스 3개를 각각 요약해주세요. 기사별 요약 결과의 출처와 기사 작성일, 출처 url도 포함되는 표 형태로 답변해주세요."))
-    # print(rag_chain.invoke("삼성전자 최신 뉴스를 요약해주세요."))
     return rag_chain
