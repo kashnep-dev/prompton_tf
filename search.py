@@ -72,7 +72,7 @@ def search_by_naver_api(param):
     client_id = "zn8zLchSGS3_WhIMHNpY"
     client_secret = "mhrP9vRyIk"
 
-    encText = urllib.parse.quote("삼성전자")
+    encText = urllib.parse.quote(param)
     display_num = urllib.parse.quote("100")  # 한 번에 표시할 검색 결과 개수(기본값: 10, 최댓값: 100) 
     start = urllib.parse.quote("1")  # 검색 시작 위치(기본값: 1, 최댓값: 1000)
     sort = urllib.parse.quote("date")  # 검색 결과 정렬 방법 - sim: 정확도순으로 내림차순 정렬 / - date: 날짜순으로 내림차순 정렬
