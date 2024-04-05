@@ -56,21 +56,22 @@ def make_llm_chain(stocks, vectorstore):
     template = """
     Answer the following questions as best you can. Please always answer the results in Korean.
     You have access to the following tools:
-    **Additional information:**
+    #Additional information:
     - News articles should be written concisely, no longer than 300 words.
     - The summary should include the main content and key information of each article.
     - The summary must be written from an objective and neutral perspective.
     - Unnecessary information should be removed and only the core content should be extracted and written.
 
-    **Print:**
+    #Print:
     - Summary results must be written in 300 words or less.
     - Please write the summary results in table form.
     - The source of the summary results for each article, the article creation date, and the source url must also be written.
 
-    **Data Source:**
-    - source of the article : You must use sources that you believe to be media outlets within the description of your metadata..
-    - the article cration date : '입력', '등록', '수정', 'UPDATE'
-    - source url : You must use the source in the metadata.
+    #Data Source:
+    - summary : You must definitely refer to description.
+    - source of the article : You must definitely refer to description.
+    - the article cration date : You must definitely refer to pubdate.
+    - source url : You must definitely refer to originallink.
     Question: {question}
     Gronding data: {context}
     Results: 
