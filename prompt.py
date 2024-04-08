@@ -1,5 +1,6 @@
 from tempfile import NamedTemporaryFile
 
+from langchain.callbacks.base import BaseCallbackHandler
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import WebBaseLoader, JSONLoader
 from langchain_community.vectorstores import FAISS
@@ -7,11 +8,21 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+import streamlit as st
+
+class StreamHandler(BaseCallbackHandler):
+    def __init__(self, container, initial_text=""):
+        self.container = container
+        self.text = initial_text
+
+    def on_llm_new_token(self, token: str, **kwargs) -> None:
+        self.text += token
+        self.container.markdown(self.text)
 
 
 def load_by_json(json_strs):
     temp_json = NamedTemporaryFile(mode="w", dir=".", delete=True, suffix=".json")
-    temp_json.write(json_strs)
+    temp_json.write(str(json_strs.encode('utf-8')))
     loader = JSONLoader(
         file_path=temp_json.name,
         jq_schema='.items[]',
@@ -73,16 +84,19 @@ def make_llm_chain(stocks, vectorstore):
     - the article cration date : You must definitely refer to pubdate.
     - source url : You must definitely refer to originallink.
     Question: {question}
-    Gronding data: {context}
+    Grounding data: {context}
     Results: 
     """
     prompt = PromptTemplate(
         input_variables=["subject"],
         template=template
     )
+    stream_handler = StreamHandler(st.empty())
     llm = ChatOpenAI(
         model_name="gpt-3.5-turbo",
-        temperature=0
+        temperature=0,
+        streaming=True,
+        callbacks=[stream_handler]
     )
 
     # 프롬프트, 모델, 출력 파서를 연결하여 처리 체인을 구성

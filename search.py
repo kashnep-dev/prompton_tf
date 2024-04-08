@@ -88,6 +88,7 @@ def search_by_naver_api(param):
     if (rescode == 200):
         response_body = response.read()
         result = json.loads(response_body)
+        print(result)
         return json.dumps(result, ensure_ascii=False)
     else:
         print("Error Code:" + rescode)
