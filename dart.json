@@ -1,0 +1,40 @@
+{
+    "items" :[
+        {
+            "corp_code" : "00231363",
+            "corp_name" : "LG유플러스"
+        },
+        {
+            "corp_code" : "00222532",
+            "corp_name" : "LG헬로비전"
+        },
+        {
+            "corp_code" : "00120021",
+            "corp_name" : "LG"
+        },
+        {
+            "corp_code" : "00356361",
+            "corp_name" : "LG화학"
+        },
+        {
+            "corp_code" : "00401731",
+            "corp_name" : "LG전자"
+        },
+        {
+            "corp_code" : "00356370",
+            "corp_name" : "LG생활건강"
+        },
+        {
+            "corp_code" : "01515323",
+            "corp_name" : "LG에너지솔루션"
+        },
+        {
+            "corp_code" : "00105873",
+            "corp_name" : "LG디스플레이"
+        },
+        {
+            "corp_code" : "00105961",
+            "corp_name" : "LG이노텍"
+        }
+    ]
+}
