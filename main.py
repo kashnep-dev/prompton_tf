@@ -1,6 +1,6 @@
 import time
 
-import chat_with_news as cwn
+import prompt as pt
 import streamlit as st
 from dotenv import load_dotenv
 from langchain.schema import ChatMessage
@@ -8,8 +8,9 @@ from langchain_community.chat_message_histories import StreamlitChatMessageHisto
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_openai import ChatOpenAI
 from streamlit_feedback import streamlit_feedback
+from datetime import datetime, timedelta
 
-from search import search_by_naver_api, search_by_dart_api
+import search
 
 load_dotenv()
 
@@ -21,12 +22,8 @@ def get_run_url(run_id):
 
 
 st.sidebar.title(":books: :blue[  OO 증권]")
-# expander = st.sidebar.markdown('## Requirements')
-
 select_event = st.sidebar.selectbox('How do you want to find data?',
-                                    ['종목뉴스 요약', '재무정보 요약', '증권약관 조회', '기업 분석', '기술적 분석'])
-#  ['Stock New Summary','inancial Information Summary','Document Analysis','Company Analysis','Techical Analysis'])
-
+                                    ['종목뉴스 요약', '재무정보 요약', '주식정보 분석', '증권약관 분석'])
 
 expander = st.sidebar.markdown('## Models and Parameters')
 temperature = st.sidebar.slider('temperature Range (0.0 ~ 2.0 )', 0.0, 2.0, 0.2)  # min, max, default
@@ -54,23 +51,16 @@ elif select_event == '증권약관 조회':
         with st.spinner('[' + context + '] Searching ...'):
             st.text('준비중 입니다.')
 
-elif select_event == '기업 분석':
-    st.title('Company Analysis')
+elif select_event == '주식정보 분석':
+    st.title('Stock Information Analysis')
     st.markdown("""
                 """)
-    uploaded_files = st.file_uploader("upload your file", type=['pdf', 'docx', 'pptx'], accept_multiple_files=True)
-    process = st.button("Process")
-
-    context = st.text_input('사업자(종목)명을 입력해주세요')
-    if st.button('기업분석'):
-        with st.spinner('[' + context + '] Searching ...'):
-            st.text('준비중 입니다.')
 else:
     st.title('Techical Analysis')
     st.markdown("""
                 """)
     context = st.text_input('사업자(종목)명을 입력해주세요')
-    if st.button('종목분석'):
+    if st.button('주식정보 분석'):
         with st.spinner('[' + context + '] Searching ...'):
             st.text('준비중 입니다.')
 
@@ -100,20 +90,24 @@ for msg in st.session_state.messages:
     st.chat_message(msg.role).write(msg.content)
 
 if user_input := st.chat_input():
-    client, run_collector, cfg = cwn.configure_run()
+    client, run_collector, cfg = pt.configure_run()
     search_result =''
     if select_event == '종목뉴스 요약':
-        search_result = search_by_naver_api(user_input)
+        search_result = search.search_by_naver_api(user_input.split()[0])
     elif select_event == '재무정보 요약':
-        search_result = search_by_dart_api(user_input.split()[0])
-    
+        search_result = search.search_by_dart_api(user_input.split()[0])
+    elif select_event == '주식정보 분석':
+        start_date = datetime(datetime.now().year, 1, 1)
+        end_date = datetime.now()
+        search_result = search.get_yearly_price(search.item_code_by_item_name(user_input.split()[0]))
+        search_result = search_result + f"는 {0}부터 {1}까지 {2}의 주식 가격이야.".format(start_date, end_date, user_input.split()[0])
 
     st.session_state.messages.append(ChatMessage(role="user", content=user_input))
     st.chat_message("user").write(user_input)
     with st.chat_message("assistant"):
-        stream_handler = cwn.StreamHandler(st.empty())
+        stream_handler = pt.StreamHandler(st.empty())
         llm = ChatOpenAI(streaming=True, callbacks=[stream_handler])
-        prompt = cwn.make_prompt()
+        prompt = pt.make_prompt_by_api(select_event)
         chain = prompt | llm
         chain_with_history = RunnableWithMessageHistory(
             chain,
@@ -130,18 +124,3 @@ if user_input := st.chat_input():
 if st.session_state.get("last_run"):
     run_url = get_run_url(st.session_state.last_run)
     st.sidebar.markdown(f"[LangSmith 추적🛠️]({run_url})")
-    feedback = streamlit_feedback(
-        feedback_type="thumbs",
-        optional_text_label=None,
-        key=f"feedback_{st.session_state.last_run}",
-    )
-    if feedback:
-        scores = {"👍": 1, "👎": 0}
-        client.create_feedback(
-            st.session_state.last_run,
-            feedback["type"],
-                score=scores[feedback["score"]],
-                comment=feedback.get("text", None),
-            )
-        st.toast("피드백을 저장하였습니다.!", icon="📝")
-    ########################################################

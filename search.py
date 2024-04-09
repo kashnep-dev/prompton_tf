@@ -6,7 +6,9 @@ from datetime import datetime, timedelta
 
 import requests
 from bs4 import BeautifulSoup
-
+import FinanceDataReader as fdr
+import pandas as pd
+import datetime
 
 def is_json_key_present(json, key):
     try:
@@ -115,7 +117,7 @@ def search_by_naver_api(param):
 # dart 재무정보 검색 API
 def search_by_dart_api(param):
     dart_api_key = os.getenv("DART_API_KEY")
-    with open('dart.json') as f:
+    with open('data/dart.json') as f:
         darts = json.load(f)
     corp_code = ''
     for corp in darts['items']:
@@ -134,32 +136,74 @@ def search_by_dart_api(param):
         json_str = json.loads(response_body)
         info_list = []
         result = OrderedDict()
-        for el in json_str['list']:
-            if el['account_id'] == 'ifrs-full_Revenue' or el['account_id'] == 'ifrs-full_ProfitLoss' or el[
-                'account_id'] == 'dart_OperatingIncomeLoss':
-                info_dict = OrderedDict()
-                if is_json_key_present(el, 'sj_nm'):
-                    info_dict['rcept_no'] = el['rcept_no']
-                    info_dict['reprt_code'] = el['reprt_code']
-                    info_dict['bsns_year'] = el['bsns_year']
-                    info_dict['corp_code'] = el['corp_code']
-                    info_dict['sj_div'] = el['sj_div']
-                    info_dict['sj_nm'] = el['sj_nm']
-                    info_dict['account_id'] = el['account_id']
-                    info_dict['account_nm'] = el['account_nm']
-                    info_dict['account_detail'] = el['account_detail']
-                    info_dict['thstrm_nm'] = el['thstrm_nm']
-                    info_dict['thstrm_amount'] = el['thstrm_amount']
-                    # info_dict['thstrm_add_amount'] = el['thstrm_add_amount']
-                    info_dict['frmtrm_nm'] = el['frmtrm_nm']
-                    info_dict['frmtrm_amount'] = el['frmtrm_amount']
-                    info_dict['bfefrmtrm_nm'] = el['bfefrmtrm_nm']
-                    info_dict['bfefrmtrm_amount'] = el['bfefrmtrm_amount']
-                    info_dict['ord'] = el['ord']
-                    info_dict['currency'] = el['currency']
+        if is_json_key_present(json_str, 'list'):
+            for el in json_str['list']:
+                if el['account_id'] == 'ifrs-full_Revenue' or el['account_id'] == 'ifrs-full_ProfitLoss' or el[
+                    'account_id'] == 'dart_OperatingIncomeLoss':
+                    info_dict = OrderedDict()
+                    if is_json_key_present(el, 'sj_nm'):
+                        info_dict['rcept_no'] = el['rcept_no']
+                        info_dict['reprt_code'] = el['reprt_code']
+                        info_dict['bsns_year'] = el['bsns_year']
+                        info_dict['corp_code'] = el['corp_code']
+                        info_dict['sj_div'] = el['sj_div']
+                        info_dict['sj_nm'] = el['sj_nm']
+                        info_dict['account_id'] = el['account_id']
+                        info_dict['account_nm'] = el['account_nm']
+                        info_dict['account_detail'] = el['account_detail']
+                        info_dict['thstrm_nm'] = el['thstrm_nm']
+                        info_dict['thstrm_amount'] = el['thstrm_amount']
+                        # info_dict['thstrm_add_amount'] = el['thstrm_add_amount']
+                        info_dict['frmtrm_nm'] = el['frmtrm_nm']
+                        info_dict['frmtrm_amount'] = el['frmtrm_amount']
+                        info_dict['bfefrmtrm_nm'] = el['bfefrmtrm_nm']
+                        info_dict['bfefrmtrm_amount'] = el['bfefrmtrm_amount']
+                        info_dict['ord'] = el['ord']
+                        info_dict['currency'] = el['currency']
 
-                    info_list.append(info_dict)
-                    result['items'] = info_list
-        return json.dumps(result, ensure_ascii=False, indent='\t')
+                        info_list.append(info_dict)
+                        result['items'] = info_list
+            return json.dumps(result, ensure_ascii=False, indent='\t')
+        else:
+            return "No Results"
     else:
         print("Error Code:" + rescode)
+
+# 종목명을 받아 종목코드를 찾아 반환하는 함수
+def item_code_by_item_name(item_name):
+    df_krx = pd.read_csv("data/krx.csv")
+    item_code_list = df_krx.loc[df_krx["Name"] == item_name, "Symbol"].tolist()
+    if len(item_code_list) > 0:
+        item_code = item_code_list[0]
+        return item_code
+    else:
+        return False
+
+# 올해 종가를 가져온다
+def get_yearly_close_price(company_code):
+    close_list = fdr.DataReader(company_code, '2024-01-01')['Close'].values
+    close_list = close_list.astype('str')
+    close_str = ', '.join(close_list)
+    return close_str
+
+# 올해 전체 가격
+def get_yearly_price(company_code):
+    return (fdr.DataReader(company_code, '2024-01-01')).to_json(orient='columns')
+
+# 현재 가격
+def get_today_price(company_code):
+    today = datetime.now().strftime("%Y-%m-%d")
+    return fdr.DataReader(company_code, today, today)
+
+# 올해 최저가
+def get_yearly_low(company_code):
+    return fdr.DataReader(company_code, '2024-01-01')['Close'].min()
+
+# 올해 최고가
+def get_yearly_high(company_code):
+    return fdr.DataReader(company_code, '2024-01-01')['Close'].max()
+
+# 올해 평균 종가
+def get_avg_close(company_code):
+    return fdr.DataReader(company_code, '2024-01-01')['Close'].mean()
+
