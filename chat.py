@@ -2,7 +2,7 @@ import streamlit as st
 from dotenv import load_dotenv
 from langchain.schema import ChatMessage
 
-import prompt as pt
+import old.old_prompt as pt
 from search import search_by_naver_api
 
 # 1. 환경변수를 읽어온다.

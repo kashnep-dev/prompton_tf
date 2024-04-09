@@ -1,18 +1,20 @@
 import FinanceDataReader as fdr
 import pandas as pd
-import datetime
+from datetime import datetime, timedelta
 
 # 삼성전자 종목코드: '005930'
 # 시작일: '2024-01-01'
 # 종료일: 현재
 
 
-start_date = datetime.datetime(datetime.datetime.now().year, 1, 1)
-end_date = datetime.datetime.now()
-today = '2024-04-09'
+start_date = datetime(datetime.now().year, 1, 1)
+end_date = datetime.now()
+
 company_code = '005930'
 
-
+today = datetime.now().strftime("%Y-%m-%d")
+one_week_ago = (datetime.now() - timedelta(days=7)).strftime("%Y%m%d")
+print(start_date,  end_date, today, one_week_ago)
 
 # 올해 종가만 가져오는 함수
 def get_yearly_close_price():
