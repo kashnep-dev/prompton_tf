@@ -63,6 +63,7 @@ def make_prompt_by_api(type):
                 손익계산서는 수주(매출액), 영업이익, 당기순이익(손실)로 확인할 수 있습니다.
                 </glossary>
                 <context>
+                {context}
                 </context>
                 <instruction>
                 위에 json은 특정회사에 재무정보입니다.
@@ -88,6 +89,10 @@ def make_prompt_by_api(type):
         나는 주식투자를 해본 적 없고, 주식투자를 통해 자산을 늘려보려고 해.
         해당 기간 동안의 최저가, 최고가, 평균가를 알려줘.
         확실하게 이해할 수 있도록 전문 애널리스트 톤으로 대답해줘.
+        <context>
+            {context}
+        </context>
+        질문 : {question}
         """
         # 향후 5일 간의 주가를 예측하는 프롬프트
         # 너의 페르소나는 주식 차트 전문가야. 반드시 주식 차트 전문가처럼 생각하고 행동해야돼.
