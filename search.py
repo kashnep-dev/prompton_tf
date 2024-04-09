@@ -77,13 +77,13 @@ def search_by_yna(param):
     return url_list
 
 
-# 네이버 뉴스 검색 API 
+# 네이버 뉴스 검색 API
 def search_by_naver_api(param):
     client_id = os.getenv("NAVER_CLIENT_ID")
     client_secret = os.getenv("NAVER_CLIENT_SECRET")
 
     encText = urllib.parse.quote(param)
-    display_num = urllib.parse.quote("10")  # 한 번에 표시할 검색 결과 개수(기본값: 10, 최댓값: 100) 
+    display_num = urllib.parse.quote("10")  # 한 번에 표시할 검색 결과 개수(기본값: 10, 최댓값: 100)
     start = urllib.parse.quote("1")  # 검색 시작 위치(기본값: 1, 최댓값: 1000)
     sort = urllib.parse.quote("date")  # 검색 결과 정렬 방법 - sim: 정확도순으로 내림차순 정렬 / - date: 날짜순으로 내림차순 정렬
 
@@ -102,12 +102,12 @@ def search_by_naver_api(param):
         article_list = []
         for article in json_str['items']:
             article_dict = OrderedDict()
-            article_dict['originallink'] = article['originallink']
+            article_dict['originallink'] = article['link']
             article_dict['description'] = article['description']
             article_dict['pubDate'] = article['pubDate']
             article_list.append(article_dict)
         result['items'] = article_list
-        return result
+        return json.dumps(result, ensure_ascii=False, indent='\t')
     else:
         print("Error Code:" + rescode)
 
