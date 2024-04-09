@@ -99,7 +99,7 @@ if user_input := st.chat_input():
     elif select_event == '주식정보 분석':
         start_date = datetime(datetime.now().year, 1, 1)
         end_date = datetime.now()
-        search_result = search.get_yearly_close_price(search.item_code_by_item_name(user_input.split()[0]))
+        search_result = search.get_yearly_price(search.item_code_by_item_name(user_input.split()[0]))
         search_result = search_result + f"는 {0}부터 {1}까지 {2}의 주식 가격이야.".format(start_date, end_date, user_input.split()[0])
 
     st.session_state.messages.append(ChatMessage(role="user", content=user_input))
@@ -124,18 +124,3 @@ if user_input := st.chat_input():
 if st.session_state.get("last_run"):
     run_url = get_run_url(st.session_state.last_run)
     st.sidebar.markdown(f"[LangSmith 추적🛠️]({run_url})")
-    feedback = streamlit_feedback(
-        feedback_type="thumbs",
-        optional_text_label=None,
-        key=f"feedback_{st.session_state.last_run}",
-    )
-    if feedback:
-        scores = {"👍": 1, "👎": 0}
-        client.create_feedback(
-            st.session_state.last_run,
-            feedback["type"],
-                score=scores[feedback["score"]],
-                comment=feedback.get("text", None),
-            )
-        st.toast("피드백을 저장하였습니다.!", icon="📝")
-    ########################################################

@@ -136,33 +136,36 @@ def search_by_dart_api(param):
         json_str = json.loads(response_body)
         info_list = []
         result = OrderedDict()
-        for el in json_str['list']:
-            if el['account_id'] == 'ifrs-full_Revenue' or el['account_id'] == 'ifrs-full_ProfitLoss' or el[
-                'account_id'] == 'dart_OperatingIncomeLoss':
-                info_dict = OrderedDict()
-                if is_json_key_present(el, 'sj_nm'):
-                    info_dict['rcept_no'] = el['rcept_no']
-                    info_dict['reprt_code'] = el['reprt_code']
-                    info_dict['bsns_year'] = el['bsns_year']
-                    info_dict['corp_code'] = el['corp_code']
-                    info_dict['sj_div'] = el['sj_div']
-                    info_dict['sj_nm'] = el['sj_nm']
-                    info_dict['account_id'] = el['account_id']
-                    info_dict['account_nm'] = el['account_nm']
-                    info_dict['account_detail'] = el['account_detail']
-                    info_dict['thstrm_nm'] = el['thstrm_nm']
-                    info_dict['thstrm_amount'] = el['thstrm_amount']
-                    # info_dict['thstrm_add_amount'] = el['thstrm_add_amount']
-                    info_dict['frmtrm_nm'] = el['frmtrm_nm']
-                    info_dict['frmtrm_amount'] = el['frmtrm_amount']
-                    info_dict['bfefrmtrm_nm'] = el['bfefrmtrm_nm']
-                    info_dict['bfefrmtrm_amount'] = el['bfefrmtrm_amount']
-                    info_dict['ord'] = el['ord']
-                    info_dict['currency'] = el['currency']
+        if is_json_key_present(json_str, 'list'):
+            for el in json_str['list']:
+                if el['account_id'] == 'ifrs-full_Revenue' or el['account_id'] == 'ifrs-full_ProfitLoss' or el[
+                    'account_id'] == 'dart_OperatingIncomeLoss':
+                    info_dict = OrderedDict()
+                    if is_json_key_present(el, 'sj_nm'):
+                        info_dict['rcept_no'] = el['rcept_no']
+                        info_dict['reprt_code'] = el['reprt_code']
+                        info_dict['bsns_year'] = el['bsns_year']
+                        info_dict['corp_code'] = el['corp_code']
+                        info_dict['sj_div'] = el['sj_div']
+                        info_dict['sj_nm'] = el['sj_nm']
+                        info_dict['account_id'] = el['account_id']
+                        info_dict['account_nm'] = el['account_nm']
+                        info_dict['account_detail'] = el['account_detail']
+                        info_dict['thstrm_nm'] = el['thstrm_nm']
+                        info_dict['thstrm_amount'] = el['thstrm_amount']
+                        # info_dict['thstrm_add_amount'] = el['thstrm_add_amount']
+                        info_dict['frmtrm_nm'] = el['frmtrm_nm']
+                        info_dict['frmtrm_amount'] = el['frmtrm_amount']
+                        info_dict['bfefrmtrm_nm'] = el['bfefrmtrm_nm']
+                        info_dict['bfefrmtrm_amount'] = el['bfefrmtrm_amount']
+                        info_dict['ord'] = el['ord']
+                        info_dict['currency'] = el['currency']
 
-                    info_list.append(info_dict)
-                    result['items'] = info_list
-        return json.dumps(result, ensure_ascii=False, indent='\t')
+                        info_list.append(info_dict)
+                        result['items'] = info_list
+            return json.dumps(result, ensure_ascii=False, indent='\t')
+        else:
+            return "No Results"
     else:
         print("Error Code:" + rescode)
 
@@ -185,7 +188,7 @@ def get_yearly_close_price(company_code):
 
 # 올해 전체 가격
 def get_yearly_price(company_code):
-    return fdr.DataReader(company_code, '2024-01-01')
+    return (fdr.DataReader(company_code, '2024-01-01')).to_json(orient='columns')
 
 # 현재 가격
 def get_today_price(company_code):

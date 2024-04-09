@@ -34,26 +34,23 @@ def make_prompt_by_api(type):
     template = ''
     if type == '종목뉴스 요약':
         template = """
-            Answer the following questions as best you can. Please always answer the results in Korean.
-            You have access to the following tools:
-            #Additional information:
-            - News articles should be written concisely, no longer than 300 words.
-            - The summary should include the main content and key information of each article.
-            - The summary must be written from an objective and neutral perspective.
-            - Unnecessary information should be removed and only the core content should be extracted and written.
-
-            #Print:
-            - Summary results must be written in 300 words or less.
-            - Please write the summary results in table form.
-            - The source of the summary results for each article, the article creation date, and the source url must also be written.
-
-            #Data Source:
-            - You must definitely refer to 'items' of Grounding data
-            - summary : You must definitely refer to description.
-            - the article creation date : You must definitely refer to pubDate. Print the date format as follows: Example: March 28, 2024 9:30
-            - source url : You must definitely refer to originallink.
-            Grounding data: {context}
-            Answer: 
+            당신은 대한민국 경제 전문가입니다. 반드시 대한민국 경제 전문가처럼 생각하고 행동해야 합니다. 결과는 항상 한국어로 답변해주세요
+            다음 지시사항을 참고하세요
+            <glossary>
+                - 요약에는 각 기사의 주요 내용과 핵심 정보가 포함되어야 합니다
+                - 요약은 객관적이고 중립적인 관점에서 작성되어야 합니다
+                - 중복 정보는 제외하고 핵심 내용만 추출하여 작성해야 합니다
+                #출력 기준:
+                    - 반드시 grounding data를 참고하시기 바랍니다
+                    - 주요 키워드는 최대 5개까지만 작성해주세요
+                    - 작성일은 한국 시간 기준 연월일시분초로 작성해주세요
+                    - 출처 URL은 해당 기사의 URL을 작성해주세요
+                    - 요약 결과를 순번, 요약, 주요 키워드, 출처, 작성일, 출처 URL의 헤더를 가지는 표 형식으로 작성해주세요
+            </glossary>
+            <grounding data>
+                {context}
+            </grounding data>
+            답변:
         """
     elif type == '재무정보 요약':
         template = """
@@ -87,7 +84,6 @@ def make_prompt_by_api(type):
         """
     elif type == '주식정보 분석':
         template = """
-        올해 최저가/최고가/평균가를 구하는 프롬프트
         너의 페르소나는 주식 애널리스트야. 반드시 애널리스트처럼 생각하고 행동해야돼.
         나는 주식투자를 해본 적 없고, 주식투자를 통해 자산을 늘려보려고 해.
         해당 기간 동안의 최저가, 최고가, 평균가를 알려줘.
