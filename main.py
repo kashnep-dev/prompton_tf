@@ -9,7 +9,7 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_openai import ChatOpenAI
 from streamlit_feedback import streamlit_feedback
 
-from search import search_by_naver_api
+from search import search_by_naver_api, search_by_dart_api
 
 load_dotenv()
 
@@ -38,74 +38,10 @@ if select_event == '종목뉴스 요약':
                 * _Stock News Sentiment Analysis_  
                 *  Bing Search, Never News API 등을 통한 사업자(종목)에 대한 뉴스 요약을 해드립니다. 
                 """)
-    ########################################################
-    # If user inputs a new prompt, generate and draw a new response
-    msgs = StreamlitChatMessageHistory(key="langchain_messages")
-
-    reset_history = st.sidebar.button("채팅 초기화")
-    if len(msgs.messages) == 0 or reset_history:
-        msgs.clear()
-        msgs.add_ai_message("무엇을 도와드릴까요?")
-        st.session_state["last_run"] = None
-
-    if "messages" not in st.session_state:
-        st.session_state["messages"] = [
-            ChatMessage(role="assistant", content="무엇을 도와드릴까요?")
-        ]
-
-    for msg in st.session_state.messages:
-        st.chat_message(msg.role).write(msg.content)
-
-    if user_input := st.chat_input():
-        client, run_collector, cfg = cwn.configure_run()
-        search_result = search_by_naver_api(user_input)
-
-        st.session_state.messages.append(ChatMessage(role="user", content=user_input))
-        st.chat_message("user").write(user_input)
-        with st.chat_message("assistant"):
-            stream_handler = cwn.StreamHandler(st.empty())
-            llm = ChatOpenAI(streaming=True, callbacks=[stream_handler])
-            prompt = cwn.make_prompt()
-            chain = prompt | llm
-            chain_with_history = RunnableWithMessageHistory(
-                chain,
-                lambda session_id: msgs,
-                input_messages_key="question",
-                history_messages_key="history",
-            )
-            response = chain_with_history.invoke({"question": user_input, "context": search_result}, cfg)
-            st.session_state.messages.append(
-                ChatMessage(role="assistant", content=response.content)
-            )
-        st.session_state.last_run = run_collector.traced_runs[0].id
-
-    if st.session_state.get("last_run"):
-        run_url = get_run_url(st.session_state.last_run)
-        st.sidebar.markdown(f"[LangSmith 추적🛠️]({run_url})")
-        feedback = streamlit_feedback(
-            feedback_type="thumbs",
-            optional_text_label=None,
-            key=f"feedback_{st.session_state.last_run}",
-        )
-        if feedback:
-            scores = {"👍": 1, "👎": 0}
-            client.create_feedback(
-                st.session_state.last_run,
-                feedback["type"],
-                score=scores[feedback["score"]],
-                comment=feedback.get("text", None),
-            )
-            st.toast("피드백을 저장하였습니다.!", icon="📝")
-    ########################################################
 elif select_event == '재무정보 요약':
     st.title('Financial Information Summary')
     st.markdown("""
                 """)
-    context = st.text_input('사업자(종목)명을 입력해주세요')
-    if st.button('재무정보 요약'):
-        with st.spinner('[' + context + '] Searching ...'):
-            st.text('준비중 입니다.')
-
 elif select_event == '증권약관 조회':
     st.title('Document Analysis')
     st.markdown("""
@@ -145,3 +81,67 @@ expander.write("""
                 And Users can easily find the information they need in various documents, including securities terms and conditions.
 
                 """)
+########################################################
+# If user inputs a new prompt, generate and draw a new response
+msgs = StreamlitChatMessageHistory(key="langchain_messages")
+
+reset_history = st.sidebar.button("채팅 초기화")
+if len(msgs.messages) == 0 or reset_history:
+    msgs.clear()
+    msgs.add_ai_message("무엇을 도와드릴까요?")
+    st.session_state["last_run"] = None
+
+if "messages" not in st.session_state:
+    st.session_state["messages"] = [
+        ChatMessage(role="assistant", content="무엇을 도와드릴까요?")
+    ]
+
+for msg in st.session_state.messages:
+    st.chat_message(msg.role).write(msg.content)
+
+if user_input := st.chat_input():
+    client, run_collector, cfg = cwn.configure_run()
+    search_result =''
+    if select_event == '종목뉴스 요약':
+        search_result = search_by_naver_api(user_input)
+    elif select_event == '재무정보 요약':
+        search_result = search_by_dart_api(user_input.split()[0])
+    
+
+    st.session_state.messages.append(ChatMessage(role="user", content=user_input))
+    st.chat_message("user").write(user_input)
+    with st.chat_message("assistant"):
+        stream_handler = cwn.StreamHandler(st.empty())
+        llm = ChatOpenAI(streaming=True, callbacks=[stream_handler])
+        prompt = cwn.make_prompt()
+        chain = prompt | llm
+        chain_with_history = RunnableWithMessageHistory(
+            chain,
+            lambda session_id: msgs,
+            input_messages_key="question",
+            history_messages_key="history",
+        )
+        response = chain_with_history.invoke({"question": user_input, "context": search_result}, cfg)
+        st.session_state.messages.append(
+            ChatMessage(role="assistant", content=response.content)
+        )
+    st.session_state.last_run = run_collector.traced_runs[0].id
+
+if st.session_state.get("last_run"):
+    run_url = get_run_url(st.session_state.last_run)
+    st.sidebar.markdown(f"[LangSmith 추적🛠️]({run_url})")
+    feedback = streamlit_feedback(
+        feedback_type="thumbs",
+        optional_text_label=None,
+        key=f"feedback_{st.session_state.last_run}",
+    )
+    if feedback:
+        scores = {"👍": 1, "👎": 0}
+        client.create_feedback(
+            st.session_state.last_run,
+            feedback["type"],
+                score=scores[feedback["score"]],
+                comment=feedback.get("text", None),
+            )
+        st.toast("피드백을 저장하였습니다.!", icon="📝")
+    ########################################################
