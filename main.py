@@ -16,10 +16,12 @@ from langchain_core.runnables import (
     ConfigurableField,
 )
 import search
+from config import configure_run
 from langchain import hub
 
 load_dotenv()
 
+configure_run()
 
 @st.cache_data(ttl="2h", show_spinner=False)
 def get_run_url(run_id):
@@ -37,38 +39,29 @@ model_name = st.sidebar.selectbox('chose a model name', ['gpt-3.5-turbo', 'gpt-4
 
 if select_event == '종목뉴스 요약':
     st.title('Stock New Summary')
-    st.markdown("""
-                * _Stock News Sentiment Analysis_  
-                *  Bing Search, Never News API 등을 통한 사업자(종목)에 대한 뉴스 요약을 해드립니다. 
-                """)
+    st.markdown("""* Never News API 등을 통한 사업자(종목)에 대한 뉴스 요약을 해드립니다.""")
 elif select_event == '재무정보 요약':
     st.title('Financial Information Summary')
-    st.markdown("""
-                """)
+    st.markdown("""* DART API를 통한 사업자(종목)에 대한 재무정보 요약을 해드립니다.""")
 elif select_event == '증권약관 분석':
     st.title('Document Analysis')
-    st.markdown("""
-                """)
-    uploaded_file = st.sidebar.file_uploader("upload your file", type=['pdf', 'docx', 'pptx'])
+    st.markdown("""* 증권약관(pdf)을 분석하여 답변을 해드립니다.""")
+    # 1. file upload
+    uploaded_file = st.sidebar.file_uploader("upload your pdf file", type=['pdf'])
     if uploaded_file:
         st.session_state['uploaded_file'] =uploaded_file
     if 'uploaded_file' in st.session_state and 'retriever' not in st.session_state:
         with st.status("파일을 처리 중입니다 🧑‍💻👩‍💻", expanded=True) as status:
-            FLAG_DELETE = True
-            if os.name == 'nt':
-                FLAG_DELETE = False
-            with tempfile.NamedTemporaryFile(delete=FLAG_DELETE) as f:
+            with tempfile.NamedTemporaryFile(delete=True) as f:
                 f.write(st.session_state["uploaded_file"].read())
                 f.flush()
-                combined_retriever = pt.make_prompt_by_file(f.name, st, status)
+                pt.make_prompt_by_file(f.name, st, status)
 elif select_event == '주식정보 분석':
     st.title('Stock Information Analysis')
-    st.markdown("""
-                """)
+    st.markdown("""* FinanceDataReader를 활용하여 주식정보를 분석합니다.""")
 else:
     st.title('Techical Analysis')
-    st.markdown("""
-                """)
+    st.markdown("""* 사용하지 않음 """)
     context = st.text_input('사업자(종목)명을 입력해주세요')
     if st.button('주식정보 분석'):
         with st.spinner('[' + context + '] Searching ...'):
@@ -81,7 +74,6 @@ expander.write("""
                 And Users can easily find the information they need in various documents, including securities terms and conditions.
 
                 """)
-########################################################
 # If user inputs a new prompt, generate and draw a new response
 msgs = StreamlitChatMessageHistory(key="langchain_messages")
 
@@ -100,7 +92,10 @@ for msg in st.session_state.messages:
     st.chat_message(msg.role).write(msg.content)
 
 if user_input := st.chat_input():
-    client, run_collector, cfg = pt.configure_run()
+    client = st.session_state["client"]
+    run_collector = st.session_state["run_collector"]
+    cfg = st.session_state["cfg"]
+
     search_result =''
     if select_event == '종목뉴스 요약':
         search_result = search.search_by_naver_api(user_input.split()[0])
@@ -115,41 +110,17 @@ if user_input := st.chat_input():
     st.session_state.messages.append(ChatMessage(role="user", content=user_input))
     st.chat_message("user").write(user_input)
     with st.chat_message("assistant"):
-        stream_handler = pt.StreamHandler(st.empty())
-        if select_event == '증권약관 분석':
-            llm = ChatOpenAI(
-                model_name="gpt-3.5-turbo",
-                temperature=0,
-                streaming=True,
-                callbacks=[stream_handler],
-                api_key=os.getenv["OPENAI_API_KEY"]
-            ).configurable_alternatives(
-                ConfigurableField(id="llm"),
-                default_key="gpt4",
-                gpt3=ChatOpenAI(
-                    model="gpt-3.5-turbo",
-                    temperature=0,
-                    streaming=True,
-                    callbacks=[stream_handler],
-                    api_key=os.getenv["OPENAI_API_KEY"]
-                ),
+        if select_event == '증권약관 분석': 
+            chain = st.session_state["chain"]
+            chain_with_history = RunnableWithMessageHistory(
+                chain,
+                lambda session_id: msgs,
+                input_messages_key="question",
+                # history_messages_key="history",
             )
-
-            chain = (
-                {
-                    "context": st.session_state["retriever"],
-                    "question": RunnablePassthrough(),
-                }
-                | hub.pull("rlm/rag-prompt-mistral")
-                | llm
-            )
-            response = chain.invoke(
-                user_input,
-            )
+            response = chain.invoke(user_input, cfg)
         else:
-            llm = ChatOpenAI(streaming=True, callbacks=[stream_handler])
-            prompt = pt.make_prompt_by_api(select_event)
-            chain = prompt | llm
+            chain = pt.make_prompt_by_api(select_event, st)
             chain_with_history = RunnableWithMessageHistory(
                 chain,
                 lambda session_id: msgs,

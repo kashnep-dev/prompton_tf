@@ -21,18 +21,6 @@ from langchain_core.runnables import (
 )
 
 
-# Customize if needed
-def configure_run():
-    client = Client()
-    ls_tracer = LangChainTracer(project_name=os.environ["LANGCHAIN_PROJECT"], client=client)
-    run_collector = RunCollectorCallbackHandler()
-    cfg = RunnableConfig()
-    cfg["callbacks"] = [ls_tracer, run_collector]
-    cfg["configurable"] = {"session_id": "any"}
-
-    return client, run_collector, cfg
-
-
 class StreamHandler(BaseCallbackHandler):
     def __init__(self, container, initial_text=""):
         self.container = container
@@ -44,7 +32,7 @@ class StreamHandler(BaseCallbackHandler):
 
 
 # Set up memory
-def make_prompt_by_api(type):
+def make_prompt_by_api(type, st):
     template = ''
     if type == '종목뉴스 요약':
         template = """
@@ -113,9 +101,7 @@ def make_prompt_by_api(type):
         # 나는 주식투자를 해본 적 없고, 차트 분석을 통해 주식투자를 할 예정이야.
         # 해당 기간 동안의 종가를 기준으로 해당 회사의 2010년부터 현재까지 주식그래프와 코싸인 유사도를 비교해보고 자기 자신을 제외한 가장 유사도가 높은 그래프를 가지고 와서 향후 5일 간의 주가 그래프를 그려줘.
         # 확실하게 이해할 수 있도록 주식 차트 전문가 톤으로 대답해줘.
-        
-        
-
+    
     prompt = ChatPromptTemplate.from_messages(
         [
             ("system", template),
@@ -123,16 +109,36 @@ def make_prompt_by_api(type):
             ("human", "{question}"),
         ]
     )
-    return prompt
+    stream_handler = StreamHandler(st.empty())
+    llm = ChatOpenAI(model='gpt-3.5-turbo', streaming=True, callbacks=[stream_handler])
+    chain = prompt | llm
+    return chain
 
 def make_prompt_by_file(f, st, status):
+    template = """
+    당신은 증권사 약관 분석 전문가입니다. 반드시 증권사 약관 분석 전문가처럼 생각하고 행동해야합니다. 결과는 항상 한국어로 답변해주세요.
+    <glossary>
+        - context에 있는 내용을 참고하여 약관을 분석해주세요.
+        - 모든 결과는 반드시 출처와 함께 제공되어야 합니다.
+    </glossary>
+    <context>
+     {context}
+    </context>
+    질문 : {question}
+    답변 : 
+    """
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", template),
+            # MessagesPlaceholder(variable_name="history"),
+            ("human", "{question}"),
+        ]
+    )
+
     loader = PDFPlumberLoader(f)
     docs = loader.load()
-
-    text_splitter = RecursiveCharacterTextSplitter(
-                    chunk_size=1000, chunk_overlap=50
-                )
-    documents = loader.load_and_split(text_splitter=text_splitter)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=50)
+    splits = text_splitter.split_documents(docs)
     st.write("① 임베딩 생성")
     status.update(label="① 임베딩을 생성 중..🔥", state="running")
     # Embedding 생성
@@ -140,43 +146,27 @@ def make_prompt_by_file(f, st, status):
     st.write("② DB 인덱싱")
     status.update(label="② DB 인덱싱 생성 중..🔥", state="running")
     # VectorStore 생성
-    faiss = FAISS.from_documents(documents, embedding["faiss"])
-    chroma = Chroma.from_documents(documents, embedding["chroma"])
-
+    faiss = FAISS.from_documents(splits, embedding["faiss"])
+    
     st.write("③ Retriever 생성")
     status.update(label="③ Retriever 생성 중..🔥", state="running")
 
     # FAISSRetriever 생성
-    faiss_retriever = retriever.FAISSRetrieverFactory(faiss).create(
-        search_kwargs={"k": 30},
+    faiss_retriever = faiss.as_retriever()
+    stream_handler = StreamHandler(st.empty())
+    llm = ChatOpenAI(model='gpt-3.5-turbo', streaming=True, callbacks=[stream_handler])
+    chain = (
+                {
+                    "context": faiss_retriever,
+                    "question": RunnablePassthrough(),
+                }
+                | prompt
+                | llm
     )
-
-    # SelfQueryRetriever 생성
-    openai_api_key = os.getenv["OPENAI_API_KEY"]
-    self_query_retriever = retriever.SelfQueryRetrieverFactory(
-        chroma
-    ).create(
-        model="gpt-3.5-turbo",
-        temperature=0,
-        api_key=openai_api_key,
-        search_kwargs={"k": 30},
-    )
-
-    # 앙상블 retriever를 초기화합니다.
-    ensemble_retriever = retriever.EnsembleRetrieverFactory(None).create(
-        retrievers=[faiss_retriever, self_query_retriever],
-        weights=[0.4, 0.6],
-    )
-    reordering = LongContextReorder()
-
-    combined_retriever = ensemble_retriever | RunnableLambda(
-        reordering.transform_documents
-    )
-    st.session_state["retriever"] = retriever
+    st.session_state["chain"] = chain
     st.write("완료 ✅")
     status.update(label="완료 ✅", state="complete", expanded=False)
     st.markdown(f'💬 `{st.session_state["uploaded_file"].name}`')
     st.markdown(
         "🔔참고\n\n**새로운 파일** 로 대화를 시작하려면, `새로고침` 후 진행해 주세요"
     )
-    return combined_retriever
