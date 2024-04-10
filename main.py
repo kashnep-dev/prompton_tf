@@ -1,7 +1,9 @@
 import time
-
+import os
+import tempfile
 import prompt as pt
 import streamlit as st
+import pandas as pd
 from dotenv import load_dotenv
 from langchain.schema import ChatMessage
 from langchain_community.chat_message_histories import StreamlitChatMessageHistory
@@ -9,8 +11,12 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_openai import ChatOpenAI
 from streamlit_feedback import streamlit_feedback
 from datetime import datetime, timedelta
-
+from langchain_core.runnables import (
+    RunnablePassthrough,
+    ConfigurableField,
+)
 import search
+from langchain import hub
 
 load_dotenv()
 
@@ -39,18 +45,22 @@ elif select_event == '재무정보 요약':
     st.title('Financial Information Summary')
     st.markdown("""
                 """)
-elif select_event == '증권약관 조회':
+elif select_event == '증권약관 분석':
     st.title('Document Analysis')
     st.markdown("""
                 """)
-    uploaded_files = st.file_uploader("upload your file", type=['pdf', 'docx', 'pptx'], accept_multiple_files=True)
-    process = st.button("Process")
-
-    context = st.text_input('궁금하신 내용을 입력해주세요')
-    if st.button('약관내용 조회'):
-        with st.spinner('[' + context + '] Searching ...'):
-            st.text('준비중 입니다.')
-
+    uploaded_file = st.sidebar.file_uploader("upload your file", type=['pdf', 'docx', 'pptx'])
+    if uploaded_file:
+        st.session_state['uploaded_file'] =uploaded_file
+    if 'uploaded_file' in st.session_state and 'retriever' not in st.session_state:
+        with st.status("파일을 처리 중입니다 🧑‍💻👩‍💻", expanded=True) as status:
+            FLAG_DELETE = True
+            if os.name == 'nt':
+                FLAG_DELETE = False
+            with tempfile.NamedTemporaryFile(delete=FLAG_DELETE) as f:
+                f.write(st.session_state["uploaded_file"].read())
+                f.flush()
+                combined_retriever = pt.make_prompt_by_file(f.name, st, status)
 elif select_event == '주식정보 분석':
     st.title('Stock Information Analysis')
     st.markdown("""
@@ -106,16 +116,47 @@ if user_input := st.chat_input():
     st.chat_message("user").write(user_input)
     with st.chat_message("assistant"):
         stream_handler = pt.StreamHandler(st.empty())
-        llm = ChatOpenAI(streaming=True, callbacks=[stream_handler])
-        prompt = pt.make_prompt_by_api(select_event)
-        chain = prompt | llm
-        chain_with_history = RunnableWithMessageHistory(
-            chain,
-            lambda session_id: msgs,
-            input_messages_key="question",
-            history_messages_key="history",
-        )
-        response = chain_with_history.invoke({"question": user_input, "context": search_result}, cfg)
+        if select_event == '증권약관 분석':
+            llm = ChatOpenAI(
+                model_name="gpt-4-turbo-preview",
+                temperature=0,
+                streaming=True,
+                callbacks=[stream_handler],
+                api_key=st.session_state["OPENAI_API_KEY"],
+            ).configurable_alternatives(
+                ConfigurableField(id="llm"),
+                default_key="gpt4",
+                gpt3=ChatOpenAI(
+                    model="gpt-3-turbo",
+                    temperature=0,
+                    streaming=True,
+                    callbacks=[stream_handler],
+                    api_key=st.session_state["OPENAI_API_KEY"],
+                ),
+            )
+
+            chain = (
+                {
+                    "context": st.session_state["retriever"],
+                    "question": RunnablePassthrough(),
+                }
+                | hub.pull("rlm/rag-prompt-mistral")
+                | llm
+            )
+            response = chain.invoke(
+                user_input,
+            )
+        else:
+            llm = ChatOpenAI(streaming=True, callbacks=[stream_handler])
+            prompt = pt.make_prompt_by_api(select_event)
+            chain = prompt | llm
+            chain_with_history = RunnableWithMessageHistory(
+                chain,
+                lambda session_id: msgs,
+                input_messages_key="question",
+                history_messages_key="history",
+            )
+            response = chain_with_history.invoke({"question": user_input, "context": search_result}, cfg)
         st.session_state.messages.append(
             ChatMessage(role="assistant", content=response.content)
         )

@@ -6,6 +6,20 @@ from langchain_core.runnables import RunnableConfig
 from langchain_core.tracers import LangChainTracer
 from langchain_core.tracers.run_collector import RunCollectorCallbackHandler
 from langsmith import Client
+from langchain_community.document_loaders import PDFPlumberLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_community.vectorstores import FAISS, Chroma
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import PromptTemplate
+from langchain_core.runnables import RunnablePassthrough
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_community.document_transformers import LongContextReorder
+import embeddings
+import retriever
+from langchain_core.runnables import (
+    RunnableLambda
+)
+
 
 # Customize if needed
 def configure_run():
@@ -110,3 +124,58 @@ def make_prompt_by_api(type):
         ]
     )
     return prompt
+
+def make_prompt_by_file(f, st, status):
+    loader = PDFPlumberLoader(f)
+    docs = loader.load()
+
+    text_splitter = RecursiveCharacterTextSplitter(
+                    chunk_size=1000, chunk_overlap=50
+                )
+    documents = loader.load_and_split(text_splitter=text_splitter)
+    st.write("① 임베딩 생성")
+    status.update(label="① 임베딩을 생성 중..🔥", state="running")
+    # Embedding 생성
+    embedding = embeddings.embedding_factory()
+    st.write("② DB 인덱싱")
+    status.update(label="② DB 인덱싱 생성 중..🔥", state="running")
+    # VectorStore 생성
+    faiss = FAISS.from_documents(documents, embedding["faiss"])
+    chroma = Chroma.from_documents(documents, embedding["chroma"])
+
+    st.write("③ Retriever 생성")
+    status.update(label="③ Retriever 생성 중..🔥", state="running")
+
+    # FAISSRetriever 생성
+    faiss_retriever = retriever.FAISSRetrieverFactory(faiss).create(
+        search_kwargs={"k": 30},
+    )
+
+    # SelfQueryRetriever 생성
+    self_query_retriever = retriever.SelfQueryRetrieverFactory(
+        chroma
+    ).create(
+        model="gpt-35-turbo",
+        temperature=0,
+        api_key=os.getenv["OPENAI_API_KEY"],
+        search_kwargs={"k": 30},
+    )
+
+    # 앙상블 retriever를 초기화합니다.
+    ensemble_retriever = retriever.EnsembleRetrieverFactory(None).create(
+        retrievers=[faiss_retriever, self_query_retriever],
+        weights=[0.4, 0.6],
+    )
+    reordering = LongContextReorder()
+
+    combined_retriever = ensemble_retriever | RunnableLambda(
+        reordering.transform_documents
+    )
+    st.session_state["retriever"] = retriever
+    st.write("완료 ✅")
+    status.update(label="완료 ✅", state="complete", expanded=False)
+    st.markdown(f'💬 `{st.session_state["uploaded_file"].name}`')
+    st.markdown(
+        "🔔참고\n\n**새로운 파일** 로 대화를 시작하려면, `새로고침` 후 진행해 주세요"
+    )
+    return combined_retriever
