@@ -118,20 +118,20 @@ if user_input := st.chat_input():
         stream_handler = pt.StreamHandler(st.empty())
         if select_event == '증권약관 분석':
             llm = ChatOpenAI(
-                model_name="gpt-4-turbo-preview",
+                model_name="gpt-3.5-turbo",
                 temperature=0,
                 streaming=True,
                 callbacks=[stream_handler],
-                api_key=st.session_state["OPENAI_API_KEY"],
+                api_key=os.getenv["OPENAI_API_KEY"]
             ).configurable_alternatives(
                 ConfigurableField(id="llm"),
                 default_key="gpt4",
                 gpt3=ChatOpenAI(
-                    model="gpt-3-turbo",
+                    model="gpt-3.5-turbo",
                     temperature=0,
                     streaming=True,
                     callbacks=[stream_handler],
-                    api_key=st.session_state["OPENAI_API_KEY"],
+                    api_key=os.getenv["OPENAI_API_KEY"]
                 ),
             )
 

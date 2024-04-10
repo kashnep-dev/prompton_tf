@@ -152,12 +152,13 @@ def make_prompt_by_file(f, st, status):
     )
 
     # SelfQueryRetriever 생성
+    openai_api_key = os.getenv["OPENAI_API_KEY"]
     self_query_retriever = retriever.SelfQueryRetrieverFactory(
         chroma
     ).create(
-        model="gpt-35-turbo",
+        model="gpt-3.5-turbo",
         temperature=0,
-        api_key=os.getenv["OPENAI_API_KEY"],
+        api_key=openai_api_key,
         search_kwargs={"k": 30},
     )
 
