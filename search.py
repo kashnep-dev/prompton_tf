@@ -1,14 +1,15 @@
+import datetime
 import json
 import os
 import urllib.request
 from collections import OrderedDict
 from datetime import datetime, timedelta
 
-import requests
-from bs4 import BeautifulSoup
 import FinanceDataReader as fdr
 import pandas as pd
-import datetime
+import requests
+from bs4 import BeautifulSoup
+
 
 def is_json_key_present(json, key):
     try:
@@ -169,6 +170,7 @@ def search_by_dart_api(param):
     else:
         print("Error Code:" + rescode)
 
+
 # 종목명을 받아 종목코드를 찾아 반환하는 함수
 def item_code_by_item_name(item_name):
     df_krx = pd.read_csv("data/krx.csv")
@@ -179,6 +181,7 @@ def item_code_by_item_name(item_name):
     else:
         return False
 
+
 # 올해 종가를 가져온다
 def get_yearly_close_price(company_code):
     close_list = fdr.DataReader(company_code, '2024-01-01')['Close'].values
@@ -186,24 +189,28 @@ def get_yearly_close_price(company_code):
     close_str = ', '.join(close_list)
     return close_str
 
+
 # 올해 전체 가격
 def get_yearly_price(company_code):
     return (fdr.DataReader(company_code, '2024-01-01')).to_json(orient='columns')
+
 
 # 현재 가격
 def get_today_price(company_code):
     today = datetime.now().strftime("%Y-%m-%d")
     return fdr.DataReader(company_code, today, today)
 
+
 # 올해 최저가
 def get_yearly_low(company_code):
     return fdr.DataReader(company_code, '2024-01-01')['Close'].min()
+
 
 # 올해 최고가
 def get_yearly_high(company_code):
     return fdr.DataReader(company_code, '2024-01-01')['Close'].max()
 
+
 # 올해 평균 종가
 def get_avg_close(company_code):
     return fdr.DataReader(company_code, '2024-01-01')['Close'].mean()
-
