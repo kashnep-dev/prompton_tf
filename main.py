@@ -92,8 +92,7 @@ if user_input := st.chat_input():
         start_date = datetime(datetime.now().year, 1, 1)
         end_date = datetime.now()
         search_result = search.get_yearly_price(search.item_code_by_item_name(user_input.split()[0]))
-        search_result = search_result + f"는 {0}부터 {1}까지 {2}의 주식 가격이야.".format(start_date, end_date,
-                                                                              user_input.split()[0])
+        search_result = search_result + "는 {0}부터 {1}까지 {2}의 주식 가격이야.".format(start_date, end_date, user_input.split()[0])
 
     st.session_state.messages.append(ChatMessage(role="user", content=user_input))
     st.chat_message("user").write(user_input)
@@ -104,7 +103,7 @@ if user_input := st.chat_input():
             retriever = st.session_state["retriever"]
 
             llm = ChatOpenAI(
-                model=st.session_state["model"],
+                model=st.session_state["model_name"],
                 temperature=st.session_state["temperature"],
                 streaming=True,
                 callbacks=[stream_handler]

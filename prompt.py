@@ -3,7 +3,7 @@ import tempfile
 import streamlit as st
 from custom_prompt_template import CustomPromptTemplate
 from langchain.callbacks.base import BaseCallbackHandler
-from langchain_community.document_loaders import PDFPlumberLoader
+from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores import FAISS
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
@@ -44,7 +44,7 @@ def chain_with_api(type):
     )
     stream_handler = StreamHandler(st.empty())
     llm = ChatOpenAI(
-        model=st.session_state["model"],
+        model=st.session_state["model_name"],
         temperature=st.session_state["temperature"],
         streaming=True,
         callbacks=[stream_handler]
@@ -57,7 +57,7 @@ def load_pdf():
     with tempfile.NamedTemporaryFile(delete=True) as f:
         f.write(st.session_state["uploaded_file"].read())
         f.flush()
-        loader = PDFPlumberLoader(f.name)
+        loader = PyPDFLoader(f.name)
         docs = loader.load()
     return docs
 
