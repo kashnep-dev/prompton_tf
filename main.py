@@ -28,7 +28,7 @@ with st.sidebar as sidebar:
     st.session_state["select_event"] = st.selectbox('How do you want to find data?',
                                                     ['종목뉴스 요약', '재무정보 요약', '주식정보 분석', '증권약관 분석'])
     st.markdown('## Models and Parameters')
-    st.session_state["temperature"] = st.slider('temperature Range (0.0 ~ 1.0 )', 0.0, 1.3, 0.0)  # min, max, default
+    st.session_state["temperature"] = st.slider('temperature Range (0.0 ~ 1.0 )', 0.0, 1.0, 0.0)  # min, max, default
     st.session_state["model_name"] = st.selectbox('chose a model name', ['gpt-3.5-turbo', 'gpt-4'])
     if st.session_state["select_event"] == '증권약관 분석':
         uploaded_file = st.sidebar.file_uploader("upload your pdf file", type=['pdf'])
