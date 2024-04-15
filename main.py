@@ -108,6 +108,7 @@ if user_input := st.chat_input():
             search.get_monthly_close_price(company_code), start_date, end_date, company_code, str(text))
 
 
+
     st.session_state.messages.append(ChatMessage(role="user", content=user_input))
     st.chat_message("user").write(user_input)
     with st.chat_message("assistant"):
