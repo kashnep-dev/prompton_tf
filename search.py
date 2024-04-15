@@ -187,6 +187,7 @@ def get_monthly_close_price(company_code):
     close_list = fdr.DataReader(company_code, datetime.today().strftime("%Y-%d-01"))['Close'].values
     close_list = close_list.astype('str')
     close_str = ', '.join(close_list)
+    print(close_str)
     return close_str
 
 
