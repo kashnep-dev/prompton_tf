@@ -95,6 +95,7 @@ if user_input := st.chat_input():
         company_name = get_company_name(user_input)
         company_code_with_text = get_company_code(company_name)
         company_code = re.findall(r'\d+', company_code_with_text)
+        print("company_code : "+ company_code[0])
 
         p = PatternFinder()
         p.set_stock(company_code[0])
