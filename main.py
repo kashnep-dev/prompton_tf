@@ -12,6 +12,7 @@ import prompt as pt
 import search
 from config import ls_configure, get_run_url
 import re
+from datetime import datetime
 
 # 환경변수 로드
 load_dotenv()
@@ -88,17 +89,16 @@ if user_input := st.chat_input():
     elif select_event == '재무정보 요약':
         search_result = search.search_by_dart_api(user_input.split()[0])
     elif select_event == '주식정보 분석':
-        start_date = '2024-04-01'
-        end_date = '2024-04-15'
+        start_date = datetime.today().strftime("%Y-%m-01")
+        end_date = datetime.today().strftime("%Y-%m-%d")
 
         company_name = get_company_name(user_input)
         company_code_with_text = get_company_code(company_name)
         company_code = re.findall(r'\d+', company_code_with_text)
 
         p = PatternFinder()
-        p.set_stock(search.item_code_by_item_name(user_input.split()[0]))
+        p.set_stock(company_code[0])
         result = p.search(start_date, end_date)
-        print(result)
         pred = p.stat_prediction(result)
         text = p.plot_pattern(result.index[1])
         search_result = "{0}는 {1}부터 {2}까지 {3}의 주식 가격이야. 그리고 이 문장은 그대로 읽어줘. 유사도 95%이상인 과거 차트에 대입시, 5일후 주가 전망은 {4}입니다.".format(
