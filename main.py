@@ -1,5 +1,3 @@
-from datetime import datetime
-
 import streamlit as st
 from dotenv import load_dotenv
 from langchain.schema import ChatMessage
@@ -12,7 +10,7 @@ import prompt as pt
 import search
 from config import ls_configure, get_run_url
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # 환경변수 로드
 load_dotenv()
