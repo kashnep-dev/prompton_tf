@@ -1,4 +1,3 @@
-import prompt as pt
 from datetime import datetime
 
 import streamlit as st
@@ -8,14 +7,14 @@ from langchain_community.chat_message_histories import StreamlitChatMessageHisto
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_openai import ChatOpenAI
-
+from predict import PatternFinder, get_company_name, get_company_code
 import prompt as pt
 import search
 from config import ls_configure, get_run_url
+import re
 
 # 환경변수 로드
 load_dotenv()
-
 # 환경설정
 ls_configure()
 
@@ -28,7 +27,7 @@ with st.sidebar as sidebar:
     st.session_state["select_event"] = st.selectbox('How do you want to find data?',
                                                     ['종목뉴스 요약', '재무정보 요약', '주식정보 분석', '증권약관 분석'])
     st.markdown('## Models and Parameters')
-    st.session_state["temperature"] = st.slider('temperature Range (0.0 ~ 2.0 )', 0.0, 2.0, 0.0)  # min, max, default
+    st.session_state["temperature"] = st.slider('temperature Range (0.0 ~ 1.0 )', 0.0, 1.0, 0.0)  # min, max, default
     st.session_state["model_name"] = st.selectbox('chose a model name', ['gpt-3.5-turbo', 'gpt-4'])
     if st.session_state["select_event"] == '증권약관 분석':
         uploaded_file = st.sidebar.file_uploader("upload your pdf file", type=['pdf'])
@@ -89,10 +88,23 @@ if user_input := st.chat_input():
     elif select_event == '재무정보 요약':
         search_result = search.search_by_dart_api(user_input.split()[0])
     elif select_event == '주식정보 분석':
-        start_date = datetime(datetime.now().year, 1, 1)
-        end_date = datetime.now()
-        search_result = search.get_yearly_price(search.item_code_by_item_name(user_input.split()[0]))
-        search_result = search_result + "는 {0}부터 {1}까지 {2}의 주식 가격이야.".format(start_date, end_date, user_input.split()[0])
+        start_date = '2024-04-01'
+        end_date = '2024-04-15'
+
+        company_name = get_company_name(user_input)
+        company_code_with_text = get_company_code(company_name)
+        company_code = re.findall(r'\d+', company_code_with_text)
+
+        p = PatternFinder()
+        p.set_stock(search.item_code_by_item_name(user_input.split()[0]))
+        result = p.search(start_date, end_date)
+        print(result)
+        pred = p.stat_prediction(result)
+        text = p.plot_pattern(result.index[1])
+        search_result = "{0}는 {1}부터 {2}까지 {3}의 주식 가격이야. 그리고 이 문장은 그대로 읽어줘. 유사도 95%이상인 과거 차트에 대입시, 5일후 주가 전망은 {4}입니다.".format(
+            search.get_yearly_close_price(company_code), start_date, end_date, company_code, str(text))
+        # search_result = search.get_yearly_price(search.item_code_by_item_name(user_input.split()[0]))
+        # search_result = search_result + "는 {0}부터 {1}까지 {2}의 주식 가격이야.".format(start_date, end_date, user_input.split()[0])
 
     st.session_state.messages.append(ChatMessage(role="user", content=user_input))
     st.chat_message("user").write(user_input)

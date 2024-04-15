@@ -1,7 +1,6 @@
 import tempfile
 
 import streamlit as st
-from custom_prompt_template import CustomPromptTemplate
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores import FAISS
@@ -10,6 +9,7 @@ from langchain_openai import ChatOpenAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 import embeddings
+from custom_prompt_template import CustomPromptTemplate
 
 
 class StreamHandler(BaseCallbackHandler):
@@ -22,19 +22,19 @@ class StreamHandler(BaseCallbackHandler):
         self.container.markdown(self.text)
 
 
-def get_prompt(type):
-    if type == '종목뉴스 요약':
+def get_prompt(template_type):
+    if template_type == '종목뉴스 요약':
         return CustomPromptTemplate.NEWS_TEMPLATE.value
-    elif type == '재무정보 요약':
+    elif template_type == '재무정보 요약':
         return CustomPromptTemplate.FINANCE_TEMPLATE.value
-    elif type == '주식정보 분석':
+    elif template_type == '주식정보 분석':
         return CustomPromptTemplate.STOCK_INFO_TEMPLATE.value
-    elif type == '증권약관 분석':
+    elif template_type == '증권약관 분석':
         return CustomPromptTemplate.DOCUMENT_TEMPLATE.value
 
 
-def chain_with_api(type):
-    template = get_prompt(type)
+def chain_with_api(template_type):
+    template = get_prompt(template_type)
     prompt = ChatPromptTemplate.from_messages(
         [
             ("system", template),
