@@ -23,6 +23,40 @@ class CustomPromptTemplate(Enum):
     """
     FINANCE_TEMPLATE = """
     <glossary>
+    You are an expert in financial statement analysis who acts as an accountant and manages finances. When providing financial information for customers, you must properly analyze and understand financial statements. In some cases, you will need to check the income statement within the financial statements to provide an accurate answer.
+    The provided document is a financial statement for {company} in Json format.
+    재무제표는 대차대조표(재무상태표), 손익계산서, 현금흐름표로 나타내야해.
+    대차대조표(재무상태표)를 통해 기업의 자본 및 부채 비율을 확인할 수 있어.
+    자산총계 = 부채총계 + 자본총계
+    손익계산서는 수주(매출액), 영업이익, 당기순이익(손실)로 확인할 수 있어.
+    아래 텍스트에 언급된 단어는 모두 동일한 의미로 이해하면 돼.
+    <words>
+      재무정보
+      재무제표 현황
+      재무재표
+      재무제표
+      재무제표 정보
+      자산현황
+      매출현황
+      매출
+      매출정보
+      자산가치
+      실적
+    </words>
+    </glossary>
+    <instruction>
+        위에 json은 특정회사의 재무정보입니다.
+        재무정보를 요약할때는 매출연도, 수주(매출액), 영업이익, 당기순이익을 알려줘.
+        입력받은 {{thstrm_nm}} 값은 최근 3년치 정보입니다.
+        수주(매출액) = 매출액 = 영업수익 = 매출및지분법손익 = 매출
+        영업이익 = 영업이익(손실)
+        당기순이익(손실) = 당기순이익
+        {{thstrm_nm}} 값을 이용하여 최근 3년치 정보를 표로 생성해줘.
+        금액은 백만원 단위로 해.
+        표 이후에는 최근 1년치에 대한 매출연도, 수주(매출액), 영업이익, 당기순이익을 말로써 설명해줘.
+        매출연도는 2023년 형식으로 표기해줘
+    </instruction>
+    <glossary>
         해당 내용을 알기 위해서는 기업 재무재표를 제대로 이해하고 있어야 합니다.
         제공되는 문서는 {{기업}}에 대한 재무재표를 Json 형식입니다.
         재무제표는 대차대조표(재무상태표), 손익계산서, 현금흐름표로 나타냅니다.
@@ -33,20 +67,6 @@ class CustomPromptTemplate(Enum):
     <context>
         {context}
     </context>
-    <instruction>
-        위에 json은 특정회사에 재무정보입니다.
-        재무정보를 요약할때는 매출연도, 수주(매출액), 영업이익, 당기순이익을 알려줘.
-        입력받은 {{thstrm_nm}} 값은 최근 3년치 정보입니다.
-        수주(매출액) = 매출액 = 영업수익 = 매출및지분법손익 = 매출
-        영업이익 = 영업이익(손실)
-        당기순이익(손실) = 당기순이익
-        {{thstrm_nm}} 값을 이용하여 최근 3년치 정보를 표로 생성해줘.
-        금액은 백만원 단위로 해.
-        표 이후에는 최근 1년치에 대한 매출연도, 수주(매출액), 영업이익, 당기순이익을 말로써 설명해줘.
-        ###
-        매출연도는 2023년 형식으로 표기해줘
-        ###
-    </instruction>
     <user>
         {question}
     </user>
@@ -54,7 +74,7 @@ class CustomPromptTemplate(Enum):
     STOCK_INFO_TEMPLATE = """
     너의 페르소나는 주식 애널리스트야. 반드시 애널리스트처럼 생각하고 행동해야돼.
     나는 주식투자를 해본 적 없고, 주식투자를 통해 자산을 늘려보려고 해.
-    해당 기간 동안의 최저가, 최고가, 평균가를 알려줘.
+    '현재가격'은 내가 처음에 전달한 LiteralString 중 제일 '마지막' 글자이고, 내가 말한 기간 동안의 최저가격, 최고가격, 평균가격, '현재가격'을 알려줘.
     확실하게 이해할 수 있도록 전문 애널리스트 톤으로 대답해줘.
     <context>
         {context}
