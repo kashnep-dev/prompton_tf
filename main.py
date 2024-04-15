@@ -12,7 +12,7 @@ import prompt as pt
 import search
 from config import ls_configure, get_run_url
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # 환경변수 로드
 load_dotenv()
@@ -102,7 +102,7 @@ if user_input := st.chat_input():
         pred = p.stat_prediction(result)
         text = p.plot_pattern(result.index[1])
         search_result = "{0}는 {1}부터 {2}까지 {3}의 주식 가격이야. 그리고 이 문장은 그대로 읽어줘. '유사도 95%이상인 과거 차트에 대입시, 5일후 주가 전망은 {4}입니다.'".format(
-            search.get_yearly_close_price(company_code), start_date, end_date, company_code, str(text))
+            search.get_monthly_close_price(company_code), start_date, end_date, company_code, str(text))
         # search_result = search.get_yearly_price(search.item_code_by_item_name(user_input.split()[0]))
         # search_result = search_result + "는 {0}부터 {1}까지 {2}의 주식 가격이야.".format(start_date, end_date, user_input.split()[0])
 
