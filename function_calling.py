@@ -5,7 +5,7 @@ import os
 from openai import OpenAI
 
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-
+###
 
 def get_finance(company, unit="test"):
     print("재무재표 : " + company)
