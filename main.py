@@ -19,6 +19,11 @@ load_dotenv()
 # 환경설정
 ls_configure()
 
+# 
+st.set_page_config(
+page_title="AI Securities Search",
+page_icon = ":books:")
+
 # If user inputs a new prompt, generate and draw a new response
 msgs = StreamlitChatMessageHistory(key="langchain_messages")
 
