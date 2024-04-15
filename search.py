@@ -184,7 +184,8 @@ def item_code_by_item_name(item_name):
 
 # 이번달 '종가'를 가져온다
 def get_monthly_close_price(company_code):
-    close_list = fdr.DataReader(company_code, datetime.today().strftime("%Y-%d-01"))['Close'].values
+    #close_list = fdr.DataReader(company_code, "2024-04-01")['Close'].values
+    close_list = fdr.DataReader(company_code, datetime.today().strftime("%Y-%m-01"))['Close'].values
     close_list = close_list.astype('str')
     close_str = ', '.join(close_list)
     return close_str
@@ -192,7 +193,7 @@ def get_monthly_close_price(company_code):
 
 # 올해 전체 가격
 def get_yearly_price(company_code):
-    return (fdr.DataReader(company_code, datetime.today().strftime("%Y-01-01"))).to_json(orient='columns')
+    return (fdr.DataReader(company_code, "2024-01-01")).to_json(orient='columns')
 
 
 # 현재 가격
@@ -203,14 +204,14 @@ def get_today_price(company_code):
 
 # 올해 최저가
 def get_yearly_low(company_code):
-    return fdr.DataReader(company_code, datetime.today().strftime("%Y-01-01"))['Close'].min()
+    return fdr.DataReader(company_code, "2024-01-01")['Close'].min()
 
 
 # 올해 최고가
 def get_yearly_high(company_code):
-    return fdr.DataReader(company_code, datetime.today().strftime("%Y-01-01"))['Close'].max()
+    return fdr.DataReader(company_code, "2024-01-01")['Close'].max()
 
 
 # 올해 평균 종가
 def get_avg_close(company_code):
-    return fdr.DataReader(company_code, datetime.today().strftime("%Y-01-01"))['Close'].mean()
+    return fdr.DataReader(company_code, "2024-01-01")['Close'].mean()
