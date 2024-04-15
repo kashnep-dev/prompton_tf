@@ -46,7 +46,7 @@ with st.sidebar as sidebar:
 # main 구성
 select_event = st.session_state["select_event"]
 if select_event == '종목뉴스 요약':
-    st.title('Stock New Summary')
+    st.title('Stock News Summary')
     st.markdown("""* Never News API 등을 통한 사업자(종목)에 대한 뉴스 요약을 해드립니다.""")
 elif select_event == '재무정보 요약':
     st.title('Financial Information Summary')
