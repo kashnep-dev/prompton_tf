@@ -73,7 +73,7 @@ def run_conversation():
         }
     ]
     response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo-0613",
+        model="gpt-3.5-turbo-1106",
         messages=messages,
         functions=functions,
         function_call="auto",  # auto is default, but we'll be explicit
