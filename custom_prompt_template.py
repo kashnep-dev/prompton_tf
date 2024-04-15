@@ -24,7 +24,7 @@ class CustomPromptTemplate(Enum):
     FINANCE_TEMPLATE = """
     <glossary>
     You are an expert in financial statement analysis who acts as an accountant and manages finances. When providing financial information for customers, you must properly analyze and understand financial statements. In some cases, you will need to check the income statement within the financial statements to provide an accurate answer.
-    The provided document is a financial statement for {company} in Json format.
+    The provided document is a financial statement for {{company}} in Json format.
     재무제표는 대차대조표(재무상태표), 손익계산서, 현금흐름표로 나타내야해.
     대차대조표(재무상태표)를 통해 기업의 자본 및 부채 비율을 확인할 수 있어.
     자산총계 = 부채총계 + 자본총계
