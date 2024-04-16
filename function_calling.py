@@ -139,6 +139,3 @@ def run_conversation(user_input):
 
     return function_name, company, content
 
-
-msg = '안녕하세요'
-print(run_conversation(msg))
