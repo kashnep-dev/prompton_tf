@@ -1,21 +1,33 @@
 import re
+import time
 from datetime import datetime
 
 import streamlit as st
 from dotenv import load_dotenv
+from langchain.callbacks.base import BaseCallbackHandler
 from langchain.schema import ChatMessage
 from langchain_community.chat_message_histories import StreamlitChatMessageHistory
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
+
 import prompt as pt
 import search
 from config import ls_configure
-from predict import PatternFinder, get_company_name, get_company_code
 from function_calling import run_conversation
-import time
-from langchain import hub
+from predict import PatternFinder, get_company_code
+
+
+class StreamHandler(BaseCallbackHandler):
+    def __init__(self, container, initial_text=""):
+        self.container = container
+        self.text = initial_text
+
+    def on_llm_new_token(self, token: str, **kwargs) -> None:
+        self.text += token
+        self.container.markdown(self.text)
+
 
 # 환경변수 로드
 load_dotenv()
@@ -32,9 +44,8 @@ def get_run_url(run_id):
 
 #
 st.set_page_config(
-page_title="AI Securities Search",
-page_icon=":books:")
-
+    page_title="AI Securities Search",
+    page_icon=":books:")
 
 st.write("")
 st.markdown("<h1 style='text-align: center;'>원하는 회사의 주식정보를</h1>", unsafe_allow_html=True)
@@ -43,7 +54,6 @@ st.markdown("<h1 style='text-align: center;'>알려드립니다.</h1>", unsafe_a
 st.write("")
 st.markdown("<p style='text-align: center; font-size: 20px;'>종목뉴스/재무정보/주식정보/증권약관 분석 </p>", unsafe_allow_html=True)
 st.write("")
-
 
 # If user inputs a new prompt, generate and draw a new response
 msgs = StreamlitChatMessageHistory(key="langchain_messages")
@@ -61,10 +71,10 @@ with st.sidebar as sidebar:
     temperature = st.slider('temperature Range (0.0 ~ 1.0 )', 0.0, 1.0, 0.0)  # min, max, default
     model_name = st.selectbox('chose a model name', ['gpt-3.5-turbo', 'gpt-4'])
     # if st.session_state["select_event"] == '증권약관 분석':
-    # uploaded_file = st.sidebar.file_uploader("upload your pdf file", type=['pdf'])
-    # if uploaded_file:
-    #     search_type = '증권약관 분석'
-    #     retriever, prompt = pt.make_prompt_by_file('증권약관 분석', uploaded_file)
+    uploaded_file = st.sidebar.file_uploader("upload your pdf file", type=['pdf'])
+    if uploaded_file:
+        search_type = '증권약관 분석'
+        retriever, prompt = pt.make_prompt_by_file('증권약관 분석', uploaded_file)
     expander = st.expander("## About ")
     expander.write(""" 
                 Introducing Stock Summary and Financial Information Summarization with Generative AI (LLM)
@@ -113,24 +123,6 @@ if user_input := st.chat_input():
         result = p.search(start_date, end_date)
         pred = p.stat_prediction(result)
         text = p.plot_pattern(result.index[1])
-        # search_result = """
-        #                     우선
-        #                     {5}
-        #                     에서 Date→날짜, Open→시작가격, High→최고가격, Low→최저가격, Close→종가, Volume→거래량, Change→등락률 로 명칭을 수정해줘.
-        #                     그리고 반드시 '표' 형태로 출력해줘.
-        #                     위 표는 {1}부터 {2}까지 {3}의 대한민국 주식장이 열린 날의 주식 가격이야.
-        #
-        #                     #최저가 : 다른 열의 값은 무시하고 반드시 '종가' 열의 값들 중 가장 작은 값
-        #                     #최고가 : 다른 열의 값은 무시하고 반드시 '종가' 열의 값들 중 가장 큰 값
-        #                     #평균가 : 다른 열의 값은 무시하고 반드시 '종가' 열의 값들의 평균 값
-        #                     #현재가 : 다른 열의 값은 무시하고 반드시 '종가' 열의 값들 중 마지막 날짜의 값
-        #
-        #                     {1}부터 {2}까지 {3}의 #최고가, #최저가, #평균가, #현재가를 목록 형태로 출력해줘.
-        #                     그리고 {4}의 값에 따라 제일 마지막 라인에 한줄 띄고 아래 문장을 줄바꿈 하여 그대로 출력해줘.
-        #                     {4}의 값이 양수일 경우, '유사도 95%이상인 과거 차트에 대입시, 5일후 주가 전망은 {4} 상승할 예정입니다.'
-        #                     {4}의 값이 음수일 경우, '유사도 95%이상인 과거 차트에 대입시, 5일후 주가 전망은 {4} 하락할 예정입니다.'
-        #                 """.format(
-        #     search.get_monthly_close_price(company_code), start_date, end_date, company, str(text), search.get_monthly_price(company_code))
 
         search_result = """
                             우선
@@ -151,14 +143,54 @@ if user_input := st.chat_input():
                             {4}의 값이 음수일 경우, '유사도 95%이상인 과거 차트에 대입시, 5일후 주가 전망은 {4} 하락할 예정입니다.'
                             #[최저가]
                         """.format(
-            search.get_monthly_close_price(company_code), start_date, end_date, company, str(text), search.get_monthly_price(company_code))
+            search.get_monthly_close_price(company_code), start_date, end_date, company, str(text),
+            search.get_monthly_price(company_code))
 
     st.session_state.messages.append(ChatMessage(role="user", content=user_input))
     st.chat_message("user").write(user_input)
     with st.chat_message("assistant"):
         stream_handler = pt.StreamHandler(st.empty())
         if company is None and search_type is None:
-            response = content
+            if uploaded_file:
+                llm = ChatOpenAI(
+                    model=model_name,
+                    temperature=temperature,
+                    streaming=True,
+                    callbacks=[stream_handler]
+                )
+                chain = (
+                        {
+                            "context": retriever,
+                            "question": RunnablePassthrough(),
+                        }
+                        | prompt
+                        | llm
+                )
+                response = chain.invoke(user_input, cfg)
+            else:
+                # response = content
+                prompt_general = ChatPromptTemplate.from_messages(
+                    [
+                        ("system", content),
+                        MessagesPlaceholder(variable_name="history"),
+                        ("human", "{question}"),
+                    ]
+                )
+                stream_handler = StreamHandler(st.empty())
+                llm = ChatOpenAI(
+                    model=model_name,
+                    temperature=temperature,
+                    streaming=True,
+                    callbacks=[stream_handler]
+                )
+                chain = prompt_general | llm
+                chain_with_history = RunnableWithMessageHistory(
+                    chain,
+                    lambda session_id: msgs,
+                    input_messages_key="question",
+                    history_messages_key="history",
+                )
+                response = chain_with_history.invoke({"question": user_input}, cfg).content
         else:
             chain = pt.chain_with_api(search_type, model_name, temperature)
             chain_with_history = RunnableWithMessageHistory(
@@ -170,7 +202,6 @@ if user_input := st.chat_input():
             response = chain_with_history.invoke({"question": user_input, "context": search_result}, cfg).content
             st.session_state.last_run = run_collector.traced_runs[0].id
         st.session_state.messages.append(ChatMessage(role="assistant", content=response))
-
 
 if st.session_state.get("last_run"):
     run_url = get_run_url(st.session_state.last_run)
