@@ -121,6 +121,7 @@ if user_input := st.chat_input():
         company_code_with_text = get_company_code(company)
         print("company_code_with_text : " + company_code_with_text)
         company_code = re.findall(r'\d+', company_code_with_text)
+        print(company_code)
         print("company_code[0] : " + company_code[0])
 
         p = PatternFinder()
