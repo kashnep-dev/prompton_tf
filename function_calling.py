@@ -114,6 +114,9 @@ def run_conversation(user_input):
         tools=tools,
         tool_choice="auto",
     )
+    #print(response)
+    
+
     response_message = response.choices[0].message
     tool_calls = response_message.tool_calls
     if tool_calls:
@@ -127,10 +130,17 @@ def run_conversation(user_input):
         if check_args(fuction_to_call, function_args) is False:
             return "Invalid number of arguments for function: " + function_name
         function_response = fuction_to_call(**function_args)
-    company = json.loads(response_message.tool_calls[0].function.arguments)['company']
-    function_name = response_message.tool_calls[0].function.name
-    return function_name, company
+        company = json.loads(response_message.tool_calls[0].function.arguments)['company']
+        function_name = response_message.tool_calls[0].function.name
+        content = None
+    else:
+        function_name = None
+        company = None 
+        content = response.choices[0].message.content
 
 
-msg = 'Lg 헬로비전 최신 뉴스를 요약해줘'
+    return function_name, company, content
+
+
+msg = '안녕하세요'
 print(run_conversation(msg))
