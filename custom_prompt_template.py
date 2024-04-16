@@ -46,6 +46,9 @@ class CustomPromptTemplate(Enum):
           실적
          </words>
     </glossary>
+    <context>
+        {context}
+    </context>
     <instruction>
         위에 json은 특정회사에 재무정보입니다.
         재무정보를 요약할때는 매출연도, 수주(매출액), 영업이익, 당기순이익을 알려줘.

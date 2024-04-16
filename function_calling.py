@@ -114,8 +114,7 @@ def run_conversation(user_input):
         tools=tools,
         tool_choice="auto",
     )
-    #print(response)
-    
+    # print(response)
 
     response_message = response.choices[0].message
     tool_calls = response_message.tool_calls
@@ -135,9 +134,8 @@ def run_conversation(user_input):
         content = None
     else:
         function_name = None
-        company = None 
+        company = None
         content = response.choices[0].message.content
-
 
     return function_name, company, content
 
