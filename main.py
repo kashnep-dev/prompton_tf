@@ -23,8 +23,17 @@ ls_configure()
 
 # 
 st.set_page_config(
-page_title="AI Securities Search",
+page_title="LG U+ Stock Bot",
 page_icon = ":books:")
+
+st.write("")
+st.markdown("<h1 style='text-align: center;'>원하는 회사의 주식정보를</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center;'>일목요연하게</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center;'>알려드립니다.</h1>", unsafe_allow_html=True)
+st.write("")
+st.markdown("<p style='text-align: center; font-size: 20px;'>종목뉴스/재무정보/주식정보/증권약관 분석 </p>", unsafe_allow_html=True)
+st.write("")
+
 
 # If user inputs a new prompt, generate and draw a new response
 msgs = StreamlitChatMessageHistory(key="langchain_messages")
