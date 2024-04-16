@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 
 import streamlit as st
@@ -7,16 +8,17 @@ from langchain_community.chat_message_histories import StreamlitChatMessageHisto
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_openai import ChatOpenAI
-from predict import PatternFinder, get_company_name, get_company_code
+
 import prompt as pt
 import search
 from config import ls_configure, get_run_url
-import re
-from datetime import datetime
+from predict import PatternFinder, get_company_name, get_company_code
+from function_calling import run_conversation
 
 # 환경변수 로드
 load_dotenv()
-# 환경설정
+
+# Langsmith 환경설정
 ls_configure()
 
 # 
@@ -30,17 +32,16 @@ msgs = StreamlitChatMessageHistory(key="langchain_messages")
 # sidebar 구성
 with st.sidebar as sidebar:
     st.title(":books: :blue[  OO 증권]")
-    st.session_state["select_event"] = st.selectbox('How do you want to find data?',
-                                                    ['종목뉴스 요약', '재무정보 요약', '주식정보 분석', '증권약관 분석'])
+    # st.session_state["select_event"] = st.selectbox('How do you want to find data?', ['종목뉴스 요약', '재무정보 요약', '주식정보 분석', '증권약관 분석'])
     st.markdown('## Models and Parameters')
     st.session_state["temperature"] = st.slider('temperature Range (0.0 ~ 1.0 )', 0.0, 1.0, 0.0)  # min, max, default
     st.session_state["model_name"] = st.selectbox('chose a model name', ['gpt-3.5-turbo', 'gpt-4'])
-    if st.session_state["select_event"] == '증권약관 분석':
-        uploaded_file = st.sidebar.file_uploader("upload your pdf file", type=['pdf'])
-        if uploaded_file:
-            st.session_state['uploaded_file'] = uploaded_file
-        if 'uploaded_file' in st.session_state and 'retriever' not in st.session_state:
-            pt.make_prompt_by_file(st.session_state["select_event"])
+    # if st.session_state["select_event"] == '증권약관 분석':
+    uploaded_file = st.sidebar.file_uploader("upload your pdf file", type=['pdf'])
+    if uploaded_file:
+        st.session_state['uploaded_file'] = uploaded_file
+    if 'uploaded_file' in st.session_state and 'retriever' not in st.session_state:
+        pt.make_prompt_by_file('증권약관 분석')
     expander = st.expander("## About ")
     expander.write(""" 
                 Introducing Stock Summary and Financial Information Summarization with Generative AI (LLM)
@@ -49,26 +50,26 @@ with st.sidebar as sidebar:
     reset_history = st.button("채팅 초기화")
 
 # main 구성
-select_event = st.session_state["select_event"]
-if select_event == '종목뉴스 요약':
-    st.title('Stock News Summary')
-    st.markdown("""* Never News API 등을 통한 사업자(종목)에 대한 뉴스 요약을 해드립니다.""")
-elif select_event == '재무정보 요약':
-    st.title('Financial Information Summary')
-    st.markdown("""* DART API를 통한 사업자(종목)에 대한 재무정보 요약을 해드립니다.""")
-elif select_event == '증권약관 분석':
-    st.title('Document Analysis')
-    st.markdown("""* 증권약관(pdf)을 분석하여 답변을 해드립니다.""")
-elif select_event == '주식정보 분석':
-    st.title('Stock Information Analysis')
-    st.markdown("""* FinanceDataReader를 활용하여 주식정보를 분석합니다.""")
-else:
-    st.title('Techical Analysis')
-    st.markdown("""* 사용하지 않음 """)
-    context = st.text_input('사업자(종목)명을 입력해주세요')
-    if st.button('주식정보 분석'):
-        with st.spinner('[' + context + '] Searching ...'):
-            st.text('준비중 입니다.')
+# select_event = st.session_state["select_event"]
+# if select_event == '종목뉴스 요약':
+#     st.title('Stock News Summary')
+#     st.markdown("""* Never News API 등을 통한 사업자(종목)에 대한 뉴스 요약을 해드립니다.""")
+# elif select_event == '재무정보 요약':
+#     st.title('Financial Information Summary')
+#     st.markdown("""* DART API를 통한 사업자(종목)에 대한 재무정보 요약을 해드립니다.""")
+# elif select_event == '증권약관 분석':
+#     st.title('Document Analysis')
+#     st.markdown("""* 증권약관(pdf)을 분석하여 답변을 해드립니다.""")
+# elif select_event == '주식정보 분석':
+#     st.title('Stock Information Analysis')
+#     st.markdown("""* FinanceDataReader를 활용하여 주식정보를 분석합니다.""")
+# else:
+#     st.title('Techical Analysis')
+#     st.markdown("""* 사용하지 않음 """)
+#     context = st.text_input('사업자(종목)명을 입력해주세요')
+#     if st.button('주식정보 분석'):
+#         with st.spinner('[' + context + '] Searching ...'):
+#             st.text('준비중 입니다.')
 
 if len(msgs.messages) == 0 or reset_history:
     msgs.clear()
@@ -88,34 +89,46 @@ if user_input := st.chat_input():
     run_collector = st.session_state["run_collector"]
     cfg = st.session_state["cfg"]
 
+    # 의도분류 - function calling
+    run_conversation(user_input)
+    search_type, company = '', ''
+    print(search_type, company)
+    if 'uploaded_file' in st.session_state and 'search_type' not in st.session_state and 'company' not in st.session_state:
+        search_type = '증권약관 분석'
+    else:
+        search_type, company = st.session_state["search_type"], st.session_state["company"]
+
     search_result = ''
-    if select_event == '종목뉴스 요약':
-        search_result = search.search_by_naver_api(user_input.split()[0])
-    elif select_event == '재무정보 요약':
-        search_result = search.search_by_dart_api(user_input.split()[0])
-    elif select_event == '주식정보 분석':
+    if search_type == '종목뉴스 요약':
+        search_result = search.search_by_naver_api(company)
+    elif search_type == '재무정보 요약':
+        search_result = search.search_by_dart_api(company)
+    elif search_type == '주식정보 분석':
         start_date = datetime.today().strftime("%Y-%m-01")
         end_date = datetime.today().strftime("%Y-%m-%d")
 
-        company_name = get_company_name(user_input)
-        company_code_with_text = get_company_code(company_name)
+        # company_name = get_company_name(user_input)
+        company_code_with_text = get_company_code(company)
+        print("company_code_with_text : " + company_code_with_text)
         company_code = re.findall(r'\d+', company_code_with_text)
+        print("company_code[0] : " + company_code[0])
 
         p = PatternFinder()
         p.set_stock(company_code[0])
         result = p.search(start_date, end_date)
         pred = p.stat_prediction(result)
         text = p.plot_pattern(result.index[1])
-        search_result = "{0}는 {1}부터 {2}까지 {3}의 주식 가격이야. 그리고 이 문장은 그대로 읽어줘. 유사도 95%이상인 과거 차트에 대입시, 5일후 주가 전망은 {4}입니다.".format(
-            search.get_yearly_close_price(company_code), start_date, end_date, company_code, str(text))
-        # search_result = search.get_yearly_price(search.item_code_by_item_name(user_input.split()[0]))
-        # search_result = search_result + "는 {0}부터 {1}까지 {2}의 주식 가격이야.".format(start_date, end_date, user_input.split()[0])
+        search_result = """
+            {0}는 {1}부터 {2}까지 {3}의 대한민국 주식장이 열린 날의 주식 가격이야.
+            그리고 '유사도 95%이상인 과거 차트에 대입시, 5일후 주가 전망은 {4}입니다.]' 문장은 줄바꿈 하여 그대로 읽어줘.
+        """.format(
+            search.get_monthly_close_price(company_code), start_date, end_date, company_code, str(text))
 
     st.session_state.messages.append(ChatMessage(role="user", content=user_input))
     st.chat_message("user").write(user_input)
     with st.chat_message("assistant"):
         stream_handler = pt.StreamHandler(st.empty())
-        if select_event == '증권약관 분석':
+        if search_type == '증권약관 분석':
             prompt = st.session_state["prompt"]
             retriever = st.session_state["retriever"]
 
@@ -135,7 +148,7 @@ if user_input := st.chat_input():
             )
             response = chain.invoke(user_input, cfg)
         else:
-            chain = pt.chain_with_api(select_event)
+            chain = pt.chain_with_api(search_type)
             chain_with_history = RunnableWithMessageHistory(
                 chain,
                 lambda session_id: msgs,

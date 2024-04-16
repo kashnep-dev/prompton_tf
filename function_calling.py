@@ -1,119 +1,142 @@
-import openai
+import inspect
 import json
+import os
+
+from dotenv import load_dotenv
+
+from openai import OpenAI
+import streamlit as st
+
+# 환경변수 로드
+load_dotenv()
+
+# client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 
-# Example dummy function hard coded to return the same weather
-# In production, this could be your backend API or an external API
 def get_finance(company, unit="test"):
-    
-    print("재무재표 : " + company)
-    
-    return company
+    # print("재무정보 요약 : " + company)
+    search_type = '재무정보 요약'
+    st.session_state['search_type'] = search_type
+    st.session_state['company'] = company
+    return search_type, company
+
 
 def get_news(company, unit="test"):
+    # print("종목뉴스 요약 : " + company)
+    search_type = '종목뉴스 요약'
+    st.session_state['search_type'] = search_type
+    st.session_state['company'] = company
+    return search_type, company
 
-    print("뉴스요약 : " + company)
-    
-    return company
 
 def get_stock(company, unit="test"):
+    # print("주식정보 분석 : " + company)
+    search_type = '주식정보 분석'
+    st.session_state['search_type'] = search_type
+    st.session_state['company'] = company
+    return search_type, company
 
-    print("주식현황 : " + company)
-    
-    return company
 
-def run_conversation():
+available_functions = {
+    "get_finance": get_finance,
+    "get_news": get_news,
+    "get_stock": get_stock
+}
+
+
+# 함수에 제공되는 매개변수가 맞는지 검수하는 함수
+def check_args(function, args):
+    sig = inspect.signature(function)
+    params = sig.parameters
+    for name in args:
+        if name not in params:
+            return False
+    for name, param in params.items():
+        if param.default is param.empty and name not in args:
+            return False
+    return True
+
+
+def run_conversation(user_input):
     # Step 1: send the conversation and available functions to GPT
-    messages = [{"role": "user", "content": "삼성전자 이번주 주식 변동폭 좀 알려줘"}]
-    functions = [
+    messages = []
+    messages.append({"role": "user", "content": user_input})
+    tools = [
         {
-            "name": "get_finance",
-            "description": "Analyze other financial statements of a specific company.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "company": {
-                        "type": "string",
-                        "description": "Company's name, e.g. 삼성전자, LG전자, LG유플러스",
+            "type": "function",
+            "function": {
+                "name": "get_finance",
+                "description": "Be sure to analyze the company's financial information, excluding stock information.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "company": {
+                            "type": "string",
+                            "description": "Company's name, e.g. 삼성전자, LG전자, LG유플러스",
+                        }
                     },
-                    "unit": {"type": "string", "enum": ["company"]},
-                },
-                "required": ["company"],
-            },
+                    "required": ["company"],
+                }
+            }
         },
         {
-            "name": "get_news",
-            "description": "Search and summarize stock news of a specific company.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "company": {
-                        "type": "string",
-                        "description": "Company's name, e.g. 삼성전자, LG전자, LG유플러스",
+            "type": "function",
+            "function": {
+                "name": "get_news",
+                "description": "Search and summarize stock news of a specific company.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "company": {
+                            "type": "string",
+                            "description": "Company's name, e.g. 삼성전자, LG전자, LG유플러스",
+                        }
                     },
-                    "unit": {"type": "string", "enum": ["company"]},
-                },
-                "required": ["company"],
-            },
+                    "required": ["company"],
+                }
+            }
         },
         {
-            "name": "get_stock",
-            "description": "Analyzing the stock price and status of a specific company",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "company": {
-                        "type": "string",
-                        "description": "Company's name, e.g. 삼성전자, LG전자, LG유플러스",
+            "type": "function",
+            "function": {
+                "name": "get_stock",
+                "description": "Analyzing the stock price and status of a specific company",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "company": {
+                            "type": "string",
+                            "description": "Company's name, e.g. 삼성전자, LG전자, LG유플러스",
+                        }
                     },
-                    "unit": {"type": "string", "enum": ["company"]},
-                },
-                "required": ["company"],
-            },
+                    "required": ["company"],
+                }
+            }
         }
     ]
-    response = openai.ChatCompletion.create(
+    client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+    response = client.chat.completions.create(
         model="gpt-3.5-turbo-1106",
         messages=messages,
-        functions=functions,
-        function_call="auto",  # auto is default, but we'll be explicit
+        tools=tools,
+        tool_choice="auto",
     )
-    response_message = response["choices"][0]["message"]
-
-    # Step 2: check if GPT wanted to call a function
-    if response_message.get("function_call"):
-        # Step 3: call the function
-        # Note: the JSON response may not always be valid; be sure to handle errors
-        available_functions = {
-            "get_finance": get_finance,
-            "get_news": get_news,
-            "get_stock": get_stock
-        }  # only one function in this example, but you can have multiple
-        function_name = response_message["function_call"]["name"]
-        fuction_to_call = available_functions[function_name]
-        function_args = json.loads(response_message["function_call"]["arguments"])
-        function_response = fuction_to_call(
-            company=function_args.get("company"),
-            unit=function_args.get("unit"),
-        )
-        print(f"function_name = {function_name}")
-        print(f"fuction_to_call = {fuction_to_call}")
-        print(f"function_args = {function_args}")
-        print(f"function_response = {function_response}")
-        # Step 4: send the info on the function call and function response to GPT
-        messages.append(response_message)  # extend conversation with assistant's reply
-        messages.append(
-            {
-                "role": "function",
-                "name": function_name,
-                "content": function_response,
-            }
-        )  # extend conversation with function response
-#         second_response = openai.ChatCompletion.create(
-#             model="gpt-3.5-turbo-0613",
-#             messages=messages,
-#         )  # get a new response from GPT where it can see the function response
+    response_message = response.choices[0].message
+    tool_calls = response_message.tool_calls
+    if tool_calls:
+        for tool_call in tool_calls:
+            function_name = tool_call.function.name
+            # verify function exists
+            if function_name not in available_functions:
+                return "Function " + function_name + " does not exist"
+            fuction_to_call = available_functions[function_name]
+        function_args = json.loads(tool_call.function.arguments)
+        if check_args(fuction_to_call, function_args) is False:
+            return "Invalid number of arguments for function: " + function_name
+        function_response = fuction_to_call(**function_args)
         return ""
 
 
-print(run_conversation())
+
+msg = 'LG유플러스 최근 3개년 재무정보를 알려줘'
+print(run_conversation(msg))

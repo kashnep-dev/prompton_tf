@@ -38,7 +38,7 @@ def get_company_code(question):
 
     prompt = ChatPromptTemplate.from_messages(
         [
-            ("system", "너는 회사명을 한국 주식의 종목코드로 변환해주는 assistant야. browsing 기능을 사용해서라도 반드시 종목코드를 알려줘야해."),
+            ("system", "너는 회사명을 한국 주식의 종목코드로 변환해주는 assistant야. 너가 가진 기능 중 학습되지 않은 최신데이터는 브라우저에서 검색해서 알려주는 'browsing' 기능을 사용해서라도 반드시 종목코드를 알려줘야해."),
             few_shot_promt,
             ("human", "{input}")
         ]
