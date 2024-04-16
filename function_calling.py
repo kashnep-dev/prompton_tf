@@ -2,23 +2,39 @@ import inspect
 import json
 import os
 
-from openai import OpenAI
+from dotenv import load_dotenv
 
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+from openai import OpenAI
+import streamlit as st
+
+# 환경변수 로드
+load_dotenv()
+
+# client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+
 
 def get_finance(company, unit="test"):
-    print("재무재표 : " + company)
-    return company
+    # print("재무정보 요약 : " + company)
+    search_type = '재무정보 요약'
+    st.session_state['search_type'] = search_type
+    st.session_state['company'] = company
+    return search_type, company
 
 
 def get_news(company, unit="test"):
-    print("뉴스요약 : " + company)
-    return company
+    # print("종목뉴스 요약 : " + company)
+    search_type = '종목뉴스 요약'
+    st.session_state['search_type'] = search_type
+    st.session_state['company'] = company
+    return search_type, company
 
 
 def get_stock(company, unit="test"):
-    print("주식현황 : " + company)
-    return company
+    # print("주식정보 분석 : " + company)
+    search_type = '주식정보 분석'
+    st.session_state['search_type'] = search_type
+    st.session_state['company'] = company
+    return search_type, company
 
 
 available_functions = {
@@ -41,16 +57,16 @@ def check_args(function, args):
     return True
 
 
-def run_conversation():
+def run_conversation(user_input):
     # Step 1: send the conversation and available functions to GPT
     messages = []
-    messages.append({"role": "user", "content": "삼성전자 재무재표 요약해서 알려줘"})
+    messages.append({"role": "user", "content": user_input})
     tools = [
         {
             "type": "function",
             "function": {
                 "name": "get_finance",
-                "description": "Analyze other financial statements of a specific company.",
+                "description": "Be sure to analyze the company's financial information, excluding stock information.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -98,6 +114,7 @@ def run_conversation():
             }
         }
     ]
+    client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
     response = client.chat.completions.create(
         model="gpt-3.5-turbo-1106",
         messages=messages,
@@ -120,4 +137,6 @@ def run_conversation():
         return ""
 
 
-print(run_conversation())
+
+msg = 'LG유플러스 최근 3개년 재무정보를 알려줘'
+print(run_conversation(msg))
