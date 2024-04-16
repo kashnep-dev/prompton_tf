@@ -23,11 +23,11 @@ class StreamHandler(BaseCallbackHandler):
 
 
 def get_prompt(template_type):
-    if template_type == 'get_stock':
+    if template_type == 'get_news':
         return CustomPromptTemplate.NEWS_TEMPLATE.value
     elif template_type == 'get_finance':
         return CustomPromptTemplate.FINANCE_TEMPLATE.value
-    elif template_type == 'get_news':
+    elif template_type == 'get_stock':
         return CustomPromptTemplate.STOCK_INFO_TEMPLATE.value
     elif template_type == '증권약관 분석':
         return CustomPromptTemplate.DOCUMENT_TEMPLATE.value
