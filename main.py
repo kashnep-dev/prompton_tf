@@ -153,7 +153,7 @@ if user_input := st.chat_input():
                         | prompt
                         | llm
                 )
-                response = chain.invoke(user_input, cfg)
+                response = chain.invoke(user_input, cfg).content
             else:
                 # response = content
                 prompt_general = ChatPromptTemplate.from_messages(
@@ -187,6 +187,7 @@ if user_input := st.chat_input():
             )
             response = chain_with_history.invoke({"question": user_input, "context": search_result}, cfg).content
             st.session_state.last_run = run_collector.traced_runs[0].id
+
         st.session_state.messages.append(ChatMessage(role="assistant", content=response))
 
 if st.session_state.get("last_run"):
