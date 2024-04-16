@@ -1,20 +1,20 @@
-import azure.cognitiveservices.speech as speechsdk
 import os
-import json
-import requests
+
+import azure.cognitiveservices.speech as speechsdk
 
 
 def tts(text):
-    speech_key = "f6d35f8af8cf4ed3912e532c186a93c2"
-    speech_region = "koreacentral"
-    speech_language = "ko-KR"
+    speech_key = os.getenv("AZURE_SPEECH_KEY")
+    speech_region = os.getenv("AZURE_SPEECH_REGION")
+    speech_language = os.getenv("AZURE_SPEECH_LANGUAGE")
 
     # This example requires environment variables named "SPEECH_KEY" and "SPEECH_REGION"
-    speech_config = speechsdk.SpeechConfig(subscription=speech_key, region=speech_region, speech_recognition_language=speech_language)
+    speech_config = speechsdk.SpeechConfig(subscription=speech_key, region=speech_region,
+                                           speech_recognition_language=speech_language)
     audio_config = speechsdk.audio.AudioOutputConfig(use_default_speaker=True)
 
     # The neural multilingual voice can speak different languages based on the input text.
-    speech_config.speech_synthesis_voice_name='ko-KR-YuJinNeural'
+    speech_config.speech_synthesis_voice_name = 'ko-KR-YuJinNeural'
 
     speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
 

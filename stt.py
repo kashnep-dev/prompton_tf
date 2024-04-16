@@ -1,20 +1,19 @@
-import azure.cognitiveservices.speech as speechsdk
 import os
-import json
-import requests
+
+import azure.cognitiveservices.speech as speechsdk
 import speech_recognition as sr
-import pyttsx3
-import tkinter as tk
+
 
 def button_click():
-    speech_key = "f6d35f8af8cf4ed3912e532c186a93c2"
-    speech_region = "koreacentral"
-    speech_language = "ko-KR"
+    speech_key = os.getenv("AZURE_SPEECH_KEY")
+    speech_region = os.getenv("AZURE_SPEECH_REGION")
+    speech_language = os.getenv("AZURE_SPEECH_LANGUAGE")
     # 음성 인식 엔진 초기화
     recognizer = sr.Recognizer()
     # Creates a recognizer with the given settings
     # Azure STT & TTS API key
-    speech_config = speechsdk.SpeechConfig(subscription=speech_key, region=speech_region, speech_recognition_language=speech_language)
+    speech_config = speechsdk.SpeechConfig(subscription=speech_key, region=speech_region,
+                                           speech_recognition_language=speech_language)
     speech_recognizer = speechsdk.SpeechRecognizer(speech_config=speech_config)
 
     print("알고 싶은 정보를 말씀해 주세요 >")
