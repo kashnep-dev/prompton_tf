@@ -31,13 +31,10 @@ def get_run_url(run_id):
 
 #
 st.set_page_config(
-<<<<<<< HEAD
-page_title="LG U+ Stock Bot",
-page_icon = ":books:")
-=======
-    page_title="AI Securities Search",
-    page_icon=":books:")
->>>>>>> cc9befe8a5cbeb30504c10f29edf6bd588917946
+
+page_title="AI Securities Search",
+page_icon=":books:")
+
 
 st.write("")
 st.markdown("<h1 style='text-align: center;'>원하는 회사의 주식정보를</h1>", unsafe_allow_html=True)
