@@ -118,6 +118,7 @@ if user_input := st.chat_input():
         end_date = datetime.today().strftime("%Y-%m-%d")
 
         # company_name = get_company_name(user_input)
+        print(company)
         company_code_with_text = get_company_code(company)
         print("company_code_with_text : " + company_code_with_text)
         company_code = re.findall(r'\d+', company_code_with_text)
@@ -132,7 +133,7 @@ if user_input := st.chat_input():
         search_result = """
                             우선
                             {5}
-                            의 칼럼명을 Date→날짜, Open→시작가격, High→최고가격, Low→최저가격, Close→종가, Volume→거래량, Change→등락률 로 수정하고, 표 형태로 출력해줘.
+                            에서 (Date)→(날짜), (Open)→(시작가격), (High)→(최고가격), (Low)→(최저가격), (Close)→(종가), (Volume)→(거래량), (Change)→(등락률) 로 명칭을 수정하고, 표 형태로 출력해줘.
                             그리고 제목 행도 데이터 행들과 열의 너비가 똑같게 출력해줘.
                             위 표는 {1}부터 {2}까지 {3}의 대한민국 주식장이 열린 날의 주식 가격이야.
 
@@ -142,11 +143,11 @@ if user_input := st.chat_input():
                             #현재가 : '종가' 열의 값들 중 마지막 날짜의 값
 
                             앞으로 내가 묻는 질문에 넌 반드시 Close 열의 값들 중에서만 대답을 해야해.
-                            위 표를 기준으로, {1}부터 {2}까지 {3}의 #최저가, #최고가, #평균가, #현재가 를 알려줘.
+                            위 표를 기준으로, {1}부터 {2}까지 {3}의 [#최저가], [#최고가], [#평균가], [#현재가] 를 알려줘.
                             그리고 {4}의 값에 따라 제일 마지막 라인에 한줄 띄고 아래 문장을 줄바꿈 하여 그대로 출력해줘.
                             {4}의 값이 양수일 경우, '유사도 95%이상인 과거 차트에 대입시, 5일후 주가 전망은 {4} 상승할 예정입니다.'
                             {4}의 값이 음수일 경우, '유사도 95%이상인 과거 차트에 대입시, 5일후 주가 전망은 {4} 하락할 예정입니다.'
-                            마지막으로 [#최저가]는 출력하지 말고 너만 기억하고 있어.
+                            #[최저가]
                         """.format(
             search.get_monthly_close_price(company_code), start_date, end_date, company, str(text), search.get_monthly_price(company_code))
 
