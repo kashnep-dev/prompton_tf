@@ -86,10 +86,13 @@ if user_input := st.chat_input():
 
     # 의도분류 - function calling
     run_conversation(user_input)
-    search_type, company = st.session_state["search_type"], st.session_state["company"]
+    search_type, company = '', ''
     print(search_type, company)
-    if 'uploaded_file' in st.session_state and search_type == '' and company == '':
+    if 'uploaded_file' in st.session_state and 'search_type' not in st.session_state and 'company' not in st.session_state:
         search_type = '증권약관 분석'
+    else:
+        search_type, company = st.session_state["search_type"], st.session_state["company"]
+
     search_result = ''
     if search_type == '종목뉴스 요약':
         search_result = search.search_by_naver_api(company)
