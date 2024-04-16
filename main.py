@@ -134,26 +134,37 @@ if user_input := st.chat_input():
         result = p.search(start_date, end_date)
         pred = p.stat_prediction(result)
         text = p.plot_pattern(result.index[1])
+        # search_result = """
+        #                     우선
+        #                     {5}
+        #                     에서 Date→날짜, Open→시작가격, High→최고가격, Low→최저가격, Close→종가, Volume→거래량, Change→등락률 로 명칭을 수정해줘.
+        #                     그리고 반드시 '표' 형태로 출력해줘.
+        #                     위 표는 {1}부터 {2}까지 {3}의 대한민국 주식장이 열린 날의 주식 가격이야.
+        #
+        #                     #최저가 : 다른 열의 값은 무시하고 반드시 '종가' 열의 값들 중 가장 작은 값
+        #                     #최고가 : 다른 열의 값은 무시하고 반드시 '종가' 열의 값들 중 가장 큰 값
+        #                     #평균가 : 다른 열의 값은 무시하고 반드시 '종가' 열의 값들의 평균 값
+        #                     #현재가 : 다른 열의 값은 무시하고 반드시 '종가' 열의 값들 중 마지막 날짜의 값
+        #
+        #                     {1}부터 {2}까지 {3}의 #최고가, #최저가, #평균가, #현재가를 목록 형태로 출력해줘.
+        #                     그리고 {4}의 값에 따라 제일 마지막 라인에 한줄 띄고 아래 문장을 줄바꿈 하여 그대로 출력해줘.
+        #                     {4}의 값이 양수일 경우, '유사도 95%이상인 과거 차트에 대입시, 5일후 주가 전망은 {4} 상승할 예정입니다.'
+        #                     {4}의 값이 음수일 경우, '유사도 95%이상인 과거 차트에 대입시, 5일후 주가 전망은 {4} 하락할 예정입니다.'
+        #                 """.format(
+        #     search.get_monthly_close_price(company_code), start_date, end_date, company, str(text), search.get_monthly_price(company_code))
+
         search_result = """
-                            우선
-                            {5}
-                            에서 (Date)→'날짜', (Open)→'시작가격', (High)→'최고가격', (Low)→'최저가격', (Close)→'종가', (Volume)→'거래량', (Change)→'등락률' 로 명칭을 수정하고,
-                            테두리가 있는 table 형태로 출력해줘.
-                            위 표는 {1}부터 {2}까지 {3}의 대한민국 주식장이 열린 날의 주식 가격이야.
-
-                            #최저가 : '종가' 열의 값들 중 가장 작은 값
-                            #최고가 : '종가' 열의 값들 중 가장 큰 값
-                            #평균가 : '종가' 열의 값들의 평균 값
-                            #현재가 : '종가' 열의 값들 중 마지막 날짜의 값
-
-                            앞으로 내가 묻는 질문에 넌 반드시 '종가' 열의 값들 중에서만 대답을 해야해.
-                            위 표를 기준으로, {1}부터 {2} 기간 동안 {3}의 [#최저가], [#최고가], [#평균가], [#현재가] 를 알려줘.
-                            그리고 {4}의 값에 따라 제일 마지막 라인에 한줄 띄고 아래 문장을 줄바꿈 하여 그대로 출력해줘.
-                            {4}의 값이 양수일 경우, '유사도 95%이상인 과거 차트에 대입시, 5일후 주가 전망은 {4} 상승할 예정입니다.'
-                            {4}의 값이 음수일 경우, '유사도 95%이상인 과거 차트에 대입시, 5일후 주가 전망은 {4} 하락할 예정입니다.'
-                            #[최저가]
-                        """.format(
-            search.get_monthly_close_price(company_code), start_date, end_date, company, str(text), search.get_monthly_price(company_code))
+                                    우선
+                                    {5}
+                                    에서 Date→날짜, Open→시작가격, High→최고가격, Low→최저가격, Close→종가, Volume→거래량, Change→등락률 로 명칭을 수정해줘.
+                                    그리고 반드시 '표' 형태로 출력해줘.
+                                    위 표는 {1}부터 {2}까지 {3}의 대한민국 주식장이 열린 날의 주식 가격이야.
+                                    
+                                    {4}의 값이 양수일 경우 다음 문장을 그대로 출력해줘. '이번 달 주가를 유사도 95%이상인 과거 차트에 대입시 5일후 주가는 +{4} 상승할 예정입니다.'
+                                    {4}의 값이 음수일 경우 다음 문장을 그대로 출력해줘. '이번 달 주가를 유사도 95%이상인 과거 차트에 대입시 5일후 주가는 -{4} 하락할 예정입니다.'
+                                """.format(
+            search.get_monthly_close_price(company_code), start_date, end_date, company, str(text),
+            search.get_monthly_price(company_code))
 
     st.session_state.messages.append(ChatMessage(role="user", content=user_input))
     st.chat_message("user").write(user_input)
