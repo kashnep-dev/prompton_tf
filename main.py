@@ -31,7 +31,7 @@ def get_run_url(run_id):
     time.sleep(1)
     return client.read_run(run_id).url
 
-def main_chat(text):
+def main_chat(text,stt_tts):
     user_input = text
     search_type, company, content = run_conversation(user_input)
     print(search_type, company, content)
@@ -135,7 +135,8 @@ def main_chat(text):
             )
             response = chain_with_history.invoke({"question": user_input, "context": search_result}, cfg).content
             st.session_state.last_run = run_collector.traced_runs[0].id
-        tts(response)
+        if stt_tts:
+            tts(response)
         st.session_state.messages.append(ChatMessage(role="assistant", content=response))
         
 
@@ -185,7 +186,7 @@ if stt_button :
     print(stt_text.text)
     st.session_state.messages.append(ChatMessage(role="user", content=stt_text.text))
 
-    main_chat(stt_text.text)
+    main_chat(stt_text.text,True)
 
 if len(msgs.messages) == 0 or reset_history:
     msgs.clear()
@@ -202,7 +203,7 @@ for msg in st.session_state.messages:
 
 if user_input := st.chat_input():
     # 의도분류 - function calling
-    main_chat(user_input)
+    main_chat(user_input,False)
 
 
 if st.session_state.get("last_run"):
