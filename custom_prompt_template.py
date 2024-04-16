@@ -24,47 +24,54 @@ class CustomPromptTemplate(Enum):
     """
     FINANCE_TEMPLATE = """
     ### Be sure to forget all your old chat history
-    <glossary>
-        You are an expert in financial statement analysis who acts as an accountant and manages finances. When providing financial information for customers, you must properly analyze and understand financial statements. In some cases, you will need to check the income statement within the financial statements to provide an accurate answer.
-        The provided document is a financial statement for {{company}} in Json format.
-           재무제표는 대차대조표(재무상태표), 손익계산서, 현금흐름표로 나타내야해.
-           대차대조표(재무상태표)를 통해 기업의 자본 및 부채 비율을 확인할 수 있어.
-           자산총계 = 부채총계 + 자본총계
-           손익계산서는 수주(매출액), 영업이익, 당기순이익(손실)로 확인할 수 있어.
-           LG헬로비전과 LG생활건강은 원 단위야.
-           LG라고 하면 {{corp_code}}가 00120021로 해줘.
-        아래 텍스트에 언급된 단어는 모두 동일한 의미로 이해하면 돼.
-         <words>
-          재무정보
-          재무제표 현황
-          재무재표
-          재무제표
-          재무제표 정보
-          자산현황
-          매출현황
-          매출
-          매출정보
-          자산가치
-          실적
-         </words>
-    </glossary>
+    <instruction>
+       - 위에 json은 입력받은 질의에 대한 회사 재무정보입니다.
+       - 재무정보를 요약할때는 매출연도, 수주(매출액), 영업이익, 당기순이익을 알려줘.
+       - {{account_id}}에 제공받은 값은 아래 <example>에 언급된 단어는 모두 동일한 의미로 이해하면 돼.
+         <example>
+            ifrs-full_Revenue = 수주(매출액) = 매출액 = 영업수익 = 매출및지분법손익 = 매출
+            dart_OperatingIncomeLoss = 영업이익 = 영업이익(손실)
+            ifrs-full_ProfitLoss = 당기순이익(손실) = 당기순이익
+         </example>
+       - 여기에서 표시되는 값은 {{thstrm_amount}} 이야.
+        표 이후에는 최근 1년치에 대한 매출연도, 수주(매출액), 영업이익, 당기순이익을 말로써 설명해줘.
+       - 재무제표 정보는 손익계산서 내에 정보를 추출해서 작성해야 합니다.
+       - 손익계산서는 수주(매출액), 영업이익, 당기순이익(손실)을 확인해서 작성되어야 합니다.
+        ### 매출연도는 2023년 형식으로 표기해줘 ###
+    </instruction>
+    #출력 기준:
+        - 반드시 context를 참고하시기 바랍니다
+        - {{corp_code}}가 00231363는 LG유플러스 이고 금액은 백만원 단위야
+        - {{corp_code}}가 00222532는 LG헬로비전 이고 금액은 원 단위야
+        - {{corp_code}}가 00120021는 LG 이고 금액은 백만원 단위야
+        - {{corp_code}}가 00356361는 LG화학 이고 금액은 백만원 단위야
+        - {{corp_code}}가 00401731는 LG전자 이고 금액은 백만원 단위야
+        - {{corp_code}}가 00356370는 LG생활건강 이고 금액은 원 단위야
+        - {{corp_code}}가 01515323는 LG에너지솔루션 이고 금액은 백만원 단위야
+        - {{corp_code}}가 00105873는 LG디스플레이 이고 금액은 백만원 단위야
+        - {{corp_code}}가 00105961는 LG이노텍 이고 금액은 백만원 단위야
+        - 우선
+            table 상단에는 "금액 : 백만원"이라고 표시해줘.
+            | 매출연도 | 수주(매출액) | 영업이익 | 당기순이익 |
+             테두리가 있는 table 형태로 출력해줘.
+        - 아래 <words>에 언급된 단어는 모두 동일한 의미로 이해하면 돼.
+     <words>
+      재무정보
+      재무제표 현황
+      재무재표
+      재무제표
+      재무제표 정보
+      자산현황
+      매출현황
+      매출
+      매출정보
+      자산가치
+      실적
+    </words>
     <context>
         {context}
     </context>
-    <instruction>
-        위에 json은 재무정보입니다.
-        재무정보를 요약할때는 매출연도, 수주(매출액), 영업이익, 당기순이익을 알려줘.
-        입력받은 {{thstrm_nm}} 값은 최근 3년치 정보입니다.
-        수주(매출액) = 매출액 = 영업수익 = 매출및지분법손익 = 매출
-        영업이익 = 영업이익(손실)
-        당기순이익(손실) = 당기순이익
-        {{thstrm_nm}} 값을 이용하여 최근 3년치 정보를 표로 생성해줘.
-        금액 단위는 백만원이야.
-        표 이후에는 최근 1년치에 대한 매출연도, 수주(매출액), 영업이익, 당기순이익을 말로써 설명해줘.
-        ###
-        매출연도는 2023년 형식으로 표기해줘
-        ###
-    </instruction>
+    답변:
     """
     STOCK_INFO_TEMPLATE = """
     ### Be sure to forget all your old chat history
