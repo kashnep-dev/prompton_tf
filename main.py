@@ -15,6 +15,8 @@ import prompt as pt
 import search
 from config import ls_configure
 from function_calling import run_conversation
+from stt import button_click
+from tts import tts
 from predict import PatternFinder, get_company_code
 
 # 환경변수 로드
@@ -29,6 +31,113 @@ def get_run_url(run_id):
     time.sleep(1)
     return client.read_run(run_id).url
 
+def main_chat(text):
+    user_input = text
+    search_type, company, content = run_conversation(user_input)
+    print(search_type, company, content)
+
+    search_result = ''
+    if search_type == 'get_news':
+        search_result = search.search_by_naver_api(company)
+    elif search_type == 'get_finance':
+        search_result = search.search_by_dart_api(company)
+    elif search_type == 'get_stock':
+        start_date = datetime.today().strftime("%Y-%m-01")
+        end_date = datetime.today().strftime("%Y-%m-%d")
+
+        print(company)
+        company_code_with_text = get_company_code(company)
+        print("company_code_with_text : " + company_code_with_text)
+        company_code = re.findall(r'\d+', company_code_with_text)
+        print(company_code)
+        print("company_code[0] : " + company_code[0])
+
+        p = PatternFinder()
+        p.set_stock(company_code[0])
+        result = p.search(start_date, end_date)
+        pred = p.stat_prediction(result)
+        text = p.plot_pattern(result.index[1])
+
+        search_result = """
+                            우선
+                            {5}
+                            에서 (Date)→'날짜', (Open)→'시작가격', (High)→'최고가격', (Low)→'최저가격', (Close)→'종가', (Volume)→'거래량', (Change)→'등락률' 로 명칭을 수정하고,
+                            테두리가 있는 table 형태로 출력해줘.
+                            위 표는 {1}부터 {2}까지 {3}의 대한민국 주식장이 열린 날의 주식 가격이야.
+
+                            #최저가 : '종가' 열의 값들 중 가장 작은 값
+                            #최고가 : '종가' 열의 값들 중 가장 큰 값
+                            #평균가 : '종가' 열의 값들의 평균 값
+                            #현재가 : '종가' 열의 값들 중 마지막 날짜의 값
+
+                            앞으로 내가 묻는 질문에 넌 반드시 '종가' 열의 값들 중에서만 대답을 해야해.
+                            위 표를 기준으로, {1}부터 {2} 기간 동안 {3}의 [#최저가], [#최고가], [#평균가], [#현재가] 를 알려줘.
+                            그리고 {4}의 값에 따라 제일 마지막 라인에 한줄 띄고 아래 문장을 줄바꿈 하여 그대로 출력해줘.
+                            {4}의 값이 양수일 경우, '유사도 95%이상인 과거 차트에 대입시, 5일후 주가 전망은 {4} 상승할 예정입니다.'
+                            {4}의 값이 음수일 경우, '유사도 95%이상인 과거 차트에 대입시, 5일후 주가 전망은 {4} 하락할 예정입니다.'
+                            #[최저가]
+                        """.format(
+            search.get_monthly_close_price(company_code), start_date, end_date, company, str(text),
+            search.get_monthly_price(company_code))
+
+    st.session_state.messages.append(ChatMessage(role="user", content=user_input))
+    st.chat_message("user").write(user_input)
+    
+    with st.chat_message("assistant"):
+        stream_handler = pt.StreamHandler(st.empty())
+        if company is None and search_type is None:
+            if uploaded_file is not None:
+                llm = ChatOpenAI(
+                    model=model_name,
+                    temperature=temperature,
+                    streaming=True,
+                    callbacks=[stream_handler]
+                )
+                chain = (
+                        {
+                            "context": retriever,
+                            "question": RunnablePassthrough(),
+                        }
+                        | prompt
+                        | llm
+                )
+                response = chain.invoke(user_input, cfg)
+            else:
+                # response = content
+                prompt_general = ChatPromptTemplate.from_messages(
+                    [
+                        ("system", content),
+                        MessagesPlaceholder(variable_name="history"),
+                        ("human", "{question}"),
+                    ]
+                )
+                llm = ChatOpenAI(
+                    model=model_name,
+                    temperature=temperature,
+                    streaming=True,
+                    callbacks=[stream_handler]
+                )
+                chain = prompt_general | llm
+                chain_with_history = RunnableWithMessageHistory(
+                    chain,
+                    lambda session_id: msgs,
+                    input_messages_key="question",
+                    history_messages_key="history",
+                )
+                response = chain_with_history.invoke({"question": user_input}, cfg).content
+        else:
+            chain = pt.chain_with_api(search_type, model_name, temperature)
+            chain_with_history = RunnableWithMessageHistory(
+                chain,
+                lambda session_id: msgs,
+                input_messages_key="question",
+                history_messages_key="history",
+            )
+            response = chain_with_history.invoke({"question": user_input, "context": search_result}, cfg).content
+            st.session_state.last_run = run_collector.traced_runs[0].id
+        tts(response)
+        st.session_state.messages.append(ChatMessage(role="assistant", content=response))
+        
 
 #
 st.set_page_config(
@@ -68,8 +177,15 @@ with st.sidebar as sidebar:
                 And Users can easily find the information they need in various documents, including securities terms and conditions.
                 """)
     reset_history = st.button("채팅 초기화")
-
+    stt_button = st.button("음성")
 # main 구성
+
+if stt_button :
+    stt_text = button_click()
+    print(stt_text.text)
+    st.session_state.messages.append(ChatMessage(role="user", content=stt_text.text))
+
+    main_chat(stt_text.text)
 
 if len(msgs.messages) == 0 or reset_history:
     msgs.clear()
@@ -86,98 +202,8 @@ for msg in st.session_state.messages:
 
 if user_input := st.chat_input():
     # 의도분류 - function calling
-    search_type, company, content = run_conversation(user_input)
-    print(search_type, company, content)
+    main_chat(user_input)
 
-    search_result = ''
-    if search_type == 'get_news':
-        search_result = search.search_by_naver_api(company)
-    elif search_type == 'get_finance':
-        search_result = search.search_by_dart_api(company)
-    elif search_type == 'get_stock':
-        start_date = datetime.today().strftime("%Y-%m-01")
-        end_date = datetime.today().strftime("%Y-%m-%d")
-
-        print(company)
-        company_code_with_text = get_company_code(company)
-        print("company_code_with_text : " + company_code_with_text)
-        company_code = re.findall(r'\d+', company_code_with_text)
-        print(company_code)
-        print("company_code[0] : " + company_code[0])
-
-        p = PatternFinder()
-        p.set_stock(company_code[0])
-        result = p.search(start_date, end_date)
-        pred = p.stat_prediction(result)
-        text = p.plot_pattern(result.index[1])
-
-        search_result = """
-                            우선
-                            {5}
-                            에서 Date→날짜, Open→시작가격, High→최고가격, Low→최저가격, Close→종가, Volume→거래량, Change→등락률 로 명칭을 수정해줘.
-                            그리고 반드시 '표' 형태로 출력해줘.
-                            위 표는 {1}부터 {2}까지 {3}의 대한민국 주식장이 열린 날의 주식 가격이야.
-                            
-                            {4}의 값이 양수일 경우 다음 문장을 그대로 출력해줘. '이번 달 주가를 유사도 95%이상인 과거 차트에 대입시 5일후 주가는 +{4} 상승할 예정입니다.'
-                            {4}의 값이 음수일 경우 다음 문장을 그대로 출력해줘. '이번 달 주가를 유사도 95%이상인 과거 차트에 대입시 5일후 주가는 -{4} 하락할 예정입니다.'
-                        """.format('', start_date, end_date, company, str(text),
-                                   search.get_monthly_price(company_code))
-
-    st.session_state.messages.append(ChatMessage(role="user", content=user_input))
-    st.chat_message("user").write(user_input)
-    with st.chat_message("assistant"):
-        stream_handler = pt.StreamHandler(st.empty())
-        if company is None and search_type is None:
-            if uploaded_file is not None:
-                llm = ChatOpenAI(
-                    model=model_name,
-                    temperature=temperature,
-                    streaming=True,
-                    callbacks=[stream_handler]
-                )
-                chain = (
-                        {
-                            "context": retriever,
-                            "question": RunnablePassthrough(),
-                        }
-                        | prompt
-                        | llm
-                )
-                response = chain.invoke(user_input, cfg).content
-            else:
-                # response = content
-                prompt_general = ChatPromptTemplate.from_messages(
-                    [
-                        ("system", content),
-                        MessagesPlaceholder(variable_name="history"),
-                        ("human", "{question}"),
-                    ]
-                )
-                llm = ChatOpenAI(
-                    model=model_name,
-                    temperature=temperature,
-                    streaming=True,
-                    callbacks=[stream_handler]
-                )
-                chain = prompt_general | llm
-                chain_with_history = RunnableWithMessageHistory(
-                    chain,
-                    lambda session_id: msgs,
-                    input_messages_key="question",
-                    history_messages_key="history",
-                )
-                response = chain_with_history.invoke({"question": user_input}, cfg).content
-        else:
-            chain = pt.chain_with_api(search_type, model_name, temperature)
-            chain_with_history = RunnableWithMessageHistory(
-                chain,
-                lambda session_id: msgs,
-                input_messages_key="question",
-                history_messages_key="history",
-            )
-            response = chain_with_history.invoke({"question": user_input, "context": search_result}, cfg).content
-        st.session_state.last_run = run_collector.traced_runs[0].id
-        st.session_state.messages.append(ChatMessage(role="assistant", content=response))
 
 if st.session_state.get("last_run"):
     run_url = get_run_url(st.session_state.last_run)
