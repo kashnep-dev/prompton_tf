@@ -5,9 +5,9 @@ import speech_recognition as sr
 
 
 def button_click():
-    speech_key = os.getenv("AZURE_SPEECH_KEY")
-    speech_region = os.getenv("AZURE_SPEECH_REGION")
-    speech_language = os.getenv("AZURE_SPEECH_LANGUAGE")
+    speech_key = 'f6d35f8af8cf4ed3912e532c186a93c2'
+    speech_region = 'koreacentral'
+    speech_language = 'ko-KR'
     # 음성 인식 엔진 초기화
     recognizer = sr.Recognizer()
     # Creates a recognizer with the given settings

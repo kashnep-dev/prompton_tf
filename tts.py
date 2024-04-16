@@ -4,9 +4,9 @@ import azure.cognitiveservices.speech as speechsdk
 
 
 def tts(text):
-    speech_key = os.getenv("AZURE_SPEECH_KEY")
-    speech_region = os.getenv("AZURE_SPEECH_REGION")
-    speech_language = os.getenv("AZURE_SPEECH_LANGUAGE")
+    speech_key = 'f6d35f8af8cf4ed3912e532c186a93c2'
+    speech_region = 'koreacentral'
+    speech_language = 'ko-KR'
 
     # This example requires environment variables named "SPEECH_KEY" and "SPEECH_REGION"
     speech_config = speechsdk.SpeechConfig(subscription=speech_key, region=speech_region,
