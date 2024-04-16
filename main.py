@@ -186,8 +186,7 @@ if user_input := st.chat_input():
                 history_messages_key="history",
             )
             response = chain_with_history.invoke({"question": user_input, "context": search_result}, cfg).content
-            st.session_state.last_run = run_collector.traced_runs[0].id
-
+        st.session_state.last_run = run_collector.traced_runs[0].id
         st.session_state.messages.append(ChatMessage(role="assistant", content=response))
 
 if st.session_state.get("last_run"):
