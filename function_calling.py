@@ -53,6 +53,7 @@ def check_args(function, args):
 def run_conversation(user_input):
     # Step 1: send the conversation and available functions to GPT
     messages = []
+    messages.append({"role": "system", "content": "It works only if the company name is specified. And If there is no company name, do not call the function."})
     messages.append({"role": "user", "content": user_input})
     tools = [
         {
