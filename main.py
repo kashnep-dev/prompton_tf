@@ -4,7 +4,6 @@ from datetime import datetime
 
 import streamlit as st
 from dotenv import load_dotenv
-from langchain.callbacks.base import BaseCallbackHandler
 from langchain.schema import ChatMessage
 from langchain_community.chat_message_histories import StreamlitChatMessageHistory
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -17,17 +16,6 @@ import search
 from config import ls_configure
 from function_calling import run_conversation
 from predict import PatternFinder, get_company_code
-
-
-class StreamHandler(BaseCallbackHandler):
-    def __init__(self, container, initial_text=""):
-        self.container = container
-        self.text = initial_text
-
-    def on_llm_new_token(self, token: str, **kwargs) -> None:
-        self.text += token
-        self.container.markdown(self.text)
-
 
 # 환경변수 로드
 load_dotenv()
@@ -58,15 +46,14 @@ st.write("")
 # If user inputs a new prompt, generate and draw a new response
 msgs = StreamlitChatMessageHistory(key="langchain_messages")
 
-temperature = 0
+temperature = 0.0
 model_name = 'gpt-3.5-turbo'
-uploaded_file = ''
-retriever, prompt = '', ''
+uploaded_file = None
+retriever, prompt = None, None
 
 # sidebar 구성
 with st.sidebar as sidebar:
     st.title(":books: :blue[  OO 증권]")
-    # st.session_state["select_event"] = st.selectbox('How do you want to find data?', ['종목뉴스 요약', '재무정보 요약', '주식정보 분석', '증권약관 분석'])
     st.markdown('## Models and Parameters')
     temperature = st.slider('temperature Range (0.0 ~ 1.0 )', 0.0, 1.0, 0.0)  # min, max, default
     model_name = st.selectbox('chose a model name', ['gpt-3.5-turbo', 'gpt-4'])
@@ -151,7 +138,7 @@ if user_input := st.chat_input():
     with st.chat_message("assistant"):
         stream_handler = pt.StreamHandler(st.empty())
         if company is None and search_type is None:
-            if uploaded_file:
+            if uploaded_file is not None:
                 llm = ChatOpenAI(
                     model=model_name,
                     temperature=temperature,
@@ -176,7 +163,6 @@ if user_input := st.chat_input():
                         ("human", "{question}"),
                     ]
                 )
-                stream_handler = StreamHandler(st.empty())
                 llm = ChatOpenAI(
                     model=model_name,
                     temperature=temperature,

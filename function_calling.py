@@ -59,7 +59,7 @@ def run_conversation(user_input):
             "type": "function",
             "function": {
                 "name": "get_finance",
-                "description": "Be sure to analyze the company's financial information, excluding stock information.",
+                "description": "Be sure to analyze the company's financial information, excluding stock information. And It works only if the company name is specified.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -76,7 +76,7 @@ def run_conversation(user_input):
             "type": "function",
             "function": {
                 "name": "get_news",
-                "description": "Search and summarize stock news of a specific company.",
+                "description": "Search and summarize stock news of a specific company. And It works only if the company name is specified.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -93,7 +93,7 @@ def run_conversation(user_input):
             "type": "function",
             "function": {
                 "name": "get_stock",
-                "description": "Analyzing the stock price and status of a specific company",
+                "description": "Analyzing the stock price and status of a specific company.  And It works only if the company name is specified.",
                 "parameters": {
                     "type": "object",
                     "properties": {
