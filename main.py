@@ -11,20 +11,33 @@ from langchain_openai import ChatOpenAI
 
 import prompt as pt
 import search
-from config import ls_configure, get_run_url
+from config import ls_configure
 from predict import PatternFinder, get_company_name, get_company_code
 from function_calling import run_conversation
+import time
 
 # 환경변수 로드
 load_dotenv()
 
 # Langsmith 환경설정
-ls_configure()
+client, run_collector, cfg = ls_configure()
 
-# 
+
+# @st.cache_data(ttl="2h", show_spinner=False)
+def get_run_url(run_id):
+    time.sleep(1)
+    return client.read_run(run_id).url
+
+
+#
 st.set_page_config(
+<<<<<<< HEAD
 page_title="LG U+ Stock Bot",
 page_icon = ":books:")
+=======
+    page_title="AI Securities Search",
+    page_icon=":books:")
+>>>>>>> cc9befe8a5cbeb30504c10f29edf6bd588917946
 
 st.write("")
 st.markdown("<h1 style='text-align: center;'>원하는 회사의 주식정보를</h1>", unsafe_allow_html=True)
@@ -38,19 +51,23 @@ st.write("")
 # If user inputs a new prompt, generate and draw a new response
 msgs = StreamlitChatMessageHistory(key="langchain_messages")
 
+temperature = 0
+model_name = 'gpt-3.5-turbo'
+uploaded_file = ''
+retriever, prompt = '', ''
+
 # sidebar 구성
 with st.sidebar as sidebar:
     st.title(":books: :blue[  OO 증권]")
     # st.session_state["select_event"] = st.selectbox('How do you want to find data?', ['종목뉴스 요약', '재무정보 요약', '주식정보 분석', '증권약관 분석'])
     st.markdown('## Models and Parameters')
-    st.session_state["temperature"] = st.slider('temperature Range (0.0 ~ 1.0 )', 0.0, 1.0, 0.0)  # min, max, default
-    st.session_state["model_name"] = st.selectbox('chose a model name', ['gpt-3.5-turbo', 'gpt-4'])
+    temperature = st.slider('temperature Range (0.0 ~ 1.0 )', 0.0, 1.0, 0.0)  # min, max, default
+    model_name = st.selectbox('chose a model name', ['gpt-3.5-turbo', 'gpt-4'])
     # if st.session_state["select_event"] == '증권약관 분석':
     uploaded_file = st.sidebar.file_uploader("upload your pdf file", type=['pdf'])
     if uploaded_file:
-        st.session_state['uploaded_file'] = uploaded_file
-    if 'uploaded_file' in st.session_state and 'retriever' not in st.session_state:
-        pt.make_prompt_by_file('증권약관 분석')
+        search_type = '증권약관 분석'
+        retriever, prompt = pt.make_prompt_by_file('증권약관 분석', uploaded_file)
     expander = st.expander("## About ")
     expander.write(""" 
                 Introducing Stock Summary and Financial Information Summarization with Generative AI (LLM)
@@ -94,32 +111,26 @@ for msg in st.session_state.messages:
     st.chat_message(msg.role).write(msg.content)
 
 if user_input := st.chat_input():
-    client = st.session_state["client"]
-    run_collector = st.session_state["run_collector"]
-    cfg = st.session_state["cfg"]
-
     # 의도분류 - function calling
-    run_conversation(user_input)
-    search_type, company = '', ''
+    search_type, company = run_conversation(user_input)
     print(search_type, company)
-    if 'uploaded_file' in st.session_state and 'search_type' not in st.session_state and 'company' not in st.session_state:
-        search_type = '증권약관 분석'
-    else:
-        search_type, company = st.session_state["search_type"], st.session_state["company"]
-
+    # else:
+    #     search_type, company = st.session_state["search_type"], st.session_state["company"]
     search_result = ''
-    if search_type == '종목뉴스 요약':
+    if search_type == 'get_news':
         search_result = search.search_by_naver_api(company)
-    elif search_type == '재무정보 요약':
+    elif search_type == 'get_finance':
         search_result = search.search_by_dart_api(company)
-    elif search_type == '주식정보 분석':
+    elif search_type == 'get_stock':
         start_date = datetime.today().strftime("%Y-%m-01")
         end_date = datetime.today().strftime("%Y-%m-%d")
 
         # company_name = get_company_name(user_input)
+        print(company)
         company_code_with_text = get_company_code(company)
         print("company_code_with_text : " + company_code_with_text)
         company_code = re.findall(r'\d+', company_code_with_text)
+        print(company_code)
         print("company_code[0] : " + company_code[0])
 
         p = PatternFinder()
@@ -128,22 +139,34 @@ if user_input := st.chat_input():
         pred = p.stat_prediction(result)
         text = p.plot_pattern(result.index[1])
         search_result = """
-            {0}는 {1}부터 {2}까지 {3}의 대한민국 주식장이 열린 날의 주식 가격이야.
-            그리고 '유사도 95%이상인 과거 차트에 대입시, 5일후 주가 전망은 {4}입니다.]' 문장은 줄바꿈 하여 그대로 읽어줘.
-        """.format(
-            search.get_monthly_close_price(company_code), start_date, end_date, company_code, str(text))
+                            우선
+                            {5}
+                            에서 (Date)→'날짜', (Open)→'시작가격', (High)→'최고가격', (Low)→'최저가격', (Close)→'종가', (Volume)→'거래량', (Change)→'등락률' 로 명칭을 수정하고,
+                            테두리가 있는 table 형태로 출력해줘.
+                            위 표는 {1}부터 {2}까지 {3}의 대한민국 주식장이 열린 날의 주식 가격이야.
+
+                            #최저가 : '종가' 열의 값들 중 가장 작은 값
+                            #최고가 : '종가' 열의 값들 중 가장 큰 값
+                            #평균가 : '종가' 열의 값들의 평균 값
+                            #현재가 : '종가' 열의 값들 중 마지막 날짜의 값
+
+                            앞으로 내가 묻는 질문에 넌 반드시 '종가' 열의 값들 중에서만 대답을 해야해.
+                            위 표를 기준으로, {1}부터 {2} 기간 동안 {3}의 [#최저가], [#최고가], [#평균가], [#현재가] 를 알려줘.
+                            그리고 {4}의 값에 따라 제일 마지막 라인에 한줄 띄고 아래 문장을 줄바꿈 하여 그대로 출력해줘.
+                            {4}의 값이 양수일 경우, '유사도 95%이상인 과거 차트에 대입시, 5일후 주가 전망은 {4} 상승할 예정입니다.'
+                            {4}의 값이 음수일 경우, '유사도 95%이상인 과거 차트에 대입시, 5일후 주가 전망은 {4} 하락할 예정입니다.'
+                            #[최저가]
+                        """.format(
+            search.get_monthly_close_price(company_code), start_date, end_date, company, str(text), search.get_monthly_price(company_code))
 
     st.session_state.messages.append(ChatMessage(role="user", content=user_input))
     st.chat_message("user").write(user_input)
     with st.chat_message("assistant"):
         stream_handler = pt.StreamHandler(st.empty())
         if search_type == '증권약관 분석':
-            prompt = st.session_state["prompt"]
-            retriever = st.session_state["retriever"]
-
             llm = ChatOpenAI(
-                model=st.session_state["model_name"],
-                temperature=st.session_state["temperature"],
+                model=model_name,
+                temperature=temperature,
                 streaming=True,
                 callbacks=[stream_handler]
             )
@@ -157,7 +180,7 @@ if user_input := st.chat_input():
             )
             response = chain.invoke(user_input, cfg)
         else:
-            chain = pt.chain_with_api(search_type)
+            chain = pt.chain_with_api(search_type, model_name, temperature)
             chain_with_history = RunnableWithMessageHistory(
                 chain,
                 lambda session_id: msgs,
