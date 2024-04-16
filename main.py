@@ -88,7 +88,7 @@ if user_input := st.chat_input():
     run_conversation(user_input)
     search_type, company = st.session_state["search_type"], st.session_state["company"]
     print(search_type, company)
-    if 'uploaded_file' in st.session_state:
+    if 'uploaded_file' in st.session_state and search_type == '' and company == '':
         search_type = '증권약관 분석'
     search_result = ''
     if search_type == '종목뉴스 요약':
