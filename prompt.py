@@ -86,6 +86,6 @@ def make_prompt_by_file(type, uploaded_file):
 
         st.write("완료 ✅")
         status.update(label="완료 ✅", state="complete", expanded=False)
-        st.markdown(f'💬 `{st.session_state["uploaded_file"].name}`')
+        st.markdown(f'💬 `{uploaded_file.name}`')
         st.markdown("🔔참고\n\n**새로운 파일** 로 대화를 시작하려면, `새로고침` 후 진행해 주세요")
         return faiss_retriever, prompt
