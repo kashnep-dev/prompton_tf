@@ -31,7 +31,6 @@ def get_run_url(run_id):
 
 #
 st.set_page_config(
-
 page_title="AI Securities Search",
 page_icon=":books:")
 
