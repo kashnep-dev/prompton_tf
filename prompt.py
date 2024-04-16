@@ -23,17 +23,17 @@ class StreamHandler(BaseCallbackHandler):
 
 
 def get_prompt(template_type):
-    if template_type == '종목뉴스 요약':
+    if template_type == 'get_stock':
         return CustomPromptTemplate.NEWS_TEMPLATE.value
-    elif template_type == '재무정보 요약':
+    elif template_type == 'get_finance':
         return CustomPromptTemplate.FINANCE_TEMPLATE.value
-    elif template_type == '주식정보 분석':
+    elif template_type == 'get_news':
         return CustomPromptTemplate.STOCK_INFO_TEMPLATE.value
     elif template_type == '증권약관 분석':
         return CustomPromptTemplate.DOCUMENT_TEMPLATE.value
 
 
-def chain_with_api(template_type):
+def chain_with_api(template_type, model_name, temperature):
     template = get_prompt(template_type)
     prompt = ChatPromptTemplate.from_messages(
         [
@@ -44,8 +44,8 @@ def chain_with_api(template_type):
     )
     stream_handler = StreamHandler(st.empty())
     llm = ChatOpenAI(
-        model=st.session_state["model_name"],
-        temperature=st.session_state["temperature"],
+        model=model_name,
+        temperature=temperature,
         streaming=True,
         callbacks=[stream_handler]
     )
@@ -53,18 +53,18 @@ def chain_with_api(template_type):
     return chain
 
 
-def load_pdf():
+def load_pdf(uploaded_file):
     with tempfile.NamedTemporaryFile(delete=True) as f:
-        f.write(st.session_state["uploaded_file"].read())
+        f.write(uploaded_file.read())
         f.flush()
         loader = PyPDFLoader(f.name)
         docs = loader.load()
     return docs
 
 
-def make_prompt_by_file(type):
+def make_prompt_by_file(type, uploaded_file):
     template = get_prompt(type)
-    docs = load_pdf()
+    docs = load_pdf(uploaded_file)
 
     prompt = ChatPromptTemplate.from_template(template)
 
@@ -84,10 +84,8 @@ def make_prompt_by_file(type):
         status.update(label="③ Retriever 생성 중..🔥", state="running")
         faiss_retriever = faiss.as_retriever()
 
-        st.session_state["retriever"] = faiss_retriever
-        st.session_state["prompt"] = prompt
-
         st.write("완료 ✅")
         status.update(label="완료 ✅", state="complete", expanded=False)
         st.markdown(f'💬 `{st.session_state["uploaded_file"].name}`')
         st.markdown("🔔참고\n\n**새로운 파일** 로 대화를 시작하려면, `새로고침` 후 진행해 주세요")
+        return faiss_retriever, prompt

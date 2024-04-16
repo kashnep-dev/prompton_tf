@@ -3,12 +3,11 @@ import json
 import os
 
 from dotenv import load_dotenv
-
 from openai import OpenAI
-import streamlit as st
 
 # 환경변수 로드
 load_dotenv()
+
 
 # client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
@@ -16,24 +15,18 @@ load_dotenv()
 def get_finance(company, unit="test"):
     # print("재무정보 요약 : " + company)
     search_type = '재무정보 요약'
-    st.session_state['search_type'] = search_type
-    st.session_state['company'] = company
     return search_type, company
 
 
 def get_news(company, unit="test"):
     # print("종목뉴스 요약 : " + company)
     search_type = '종목뉴스 요약'
-    st.session_state['search_type'] = search_type
-    st.session_state['company'] = company
     return search_type, company
 
 
 def get_stock(company, unit="test"):
     # print("주식정보 분석 : " + company)
     search_type = '주식정보 분석'
-    st.session_state['search_type'] = search_type
-    st.session_state['company'] = company
     return search_type, company
 
 
@@ -75,7 +68,7 @@ def run_conversation(user_input):
                             "description": "Company's name, e.g. 삼성전자, LG전자, LG유플러스",
                         }
                     },
-                    "required": ["company"],
+                    "required": ["company"]
                 }
             }
         },
@@ -92,7 +85,7 @@ def run_conversation(user_input):
                             "description": "Company's name, e.g. 삼성전자, LG전자, LG유플러스",
                         }
                     },
-                    "required": ["company"],
+                    "required": ["company"]
                 }
             }
         },
@@ -109,7 +102,7 @@ def run_conversation(user_input):
                             "description": "Company's name, e.g. 삼성전자, LG전자, LG유플러스",
                         }
                     },
-                    "required": ["company"],
+                    "required": ["company"]
                 }
             }
         }
@@ -134,9 +127,10 @@ def run_conversation(user_input):
         if check_args(fuction_to_call, function_args) is False:
             return "Invalid number of arguments for function: " + function_name
         function_response = fuction_to_call(**function_args)
-        return ""
+    company = json.loads(response_message.tool_calls[0].function.arguments)['company']
+    function_name = response_message.tool_calls[0].function.name
+    return function_name, company
 
 
-
-msg = 'LG유플러스 최근 3개년 재무정보를 알려줘'
+msg = 'Lg 헬로비전 최신 뉴스를 요약해줘'
 print(run_conversation(msg))
