@@ -146,9 +146,9 @@ if user_input := st.chat_input():
                             그리고 {4}의 값에 따라 제일 마지막 라인에 한줄 띄고 아래 문장을 줄바꿈 하여 그대로 출력해줘.
                             {4}의 값이 양수일 경우, '유사도 95%이상인 과거 차트에 대입시, 5일후 주가 전망은 {4} 상승할 예정입니다.'
                             {4}의 값이 음수일 경우, '유사도 95%이상인 과거 차트에 대입시, 5일후 주가 전망은 {4} 하락할 예정입니다.'
+                            마지막으로 [#최저가]는 출력하지 말고 너만 기억하고 있어.
                         """.format(
-            search.get_monthly_close_price(company_code), start_date, end_date, company, str(text),
-            search.get_monthly_price(company_code))
+            search.get_monthly_close_price(company_code), start_date, end_date, company, str(text), search.get_monthly_price(company_code))
 
     st.session_state.messages.append(ChatMessage(role="user", content=user_input))
     st.chat_message("user").write(user_input)
