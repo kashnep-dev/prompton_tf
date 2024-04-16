@@ -32,7 +32,7 @@ def get_run_url(run_id):
 #
 st.set_page_config(
 page_title="AI Securities Search",
-page_icon=":books:")
+page_icon='👨‍🔬')
 
 
 st.write("")
@@ -54,6 +54,7 @@ retriever, prompt = '', ''
 
 # sidebar 구성
 with st.sidebar as sidebar:
+    st.image("man1.jpg")
     st.title(":books: :blue[  OO 증권]")
     # st.session_state["select_event"] = st.selectbox('How do you want to find data?', ['종목뉴스 요약', '재무정보 요약', '주식정보 분석', '증권약관 분석'])
     st.markdown('## Models and Parameters')
