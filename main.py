@@ -102,7 +102,7 @@ def main_chat(text, stt_tts):
                         | prompt
                         | llm
                 )
-                response = chain.invoke(user_input, cfg)
+                response = chain.invoke(user_input, cfg).content
             else:
                 # response = content
                 prompt_general = ChatPromptTemplate.from_messages(

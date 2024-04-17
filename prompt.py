@@ -54,7 +54,7 @@ def chain_with_api(template_type, model_name, temperature):
 
 
 def load_pdf(uploaded_file):
-    with tempfile.NamedTemporaryFile(delete=True) as f:
+    with tempfile.NamedTemporaryFile(delete=False) as f:
         f.write(uploaded_file.read())
         f.flush()
         loader = PyPDFLoader(f.name)
