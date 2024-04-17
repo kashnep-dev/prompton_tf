@@ -135,13 +135,12 @@ def main_chat(text, stt_tts):
                 history_messages_key="history",
             )
             response = chain_with_history.invoke({"question": user_input, "context": search_result}, cfg).content
-            st.session_state.last_run = run_collector.traced_runs[0].id
         if stt_tts:
             tts(response)
         st.session_state.messages.append(ChatMessage(role="assistant", content=response))
+    st.session_state.last_run = run_collector.traced_runs[0].id
 
 
-#
 st.set_page_config(
     page_title="AI Securities Search",
     page_icon=":books:")
