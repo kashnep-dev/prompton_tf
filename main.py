@@ -25,6 +25,8 @@ load_dotenv()
 # Langsmith 환경설정
 client, run_collector, cfg = ls_configure()
 
+def test():
+    print('hello')
 
 # @st.cache_data(ttl="2h", show_spinner=False)
 def get_run_url(run_id):
