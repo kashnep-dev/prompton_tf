@@ -26,7 +26,7 @@ load_dotenv()
 client, run_collector, cfg = ls_configure()
 
 def test():
-    print('hello')
+    print('test')
 
 # @st.cache_data(ttl="2h", show_spinner=False)
 def get_run_url(run_id):
