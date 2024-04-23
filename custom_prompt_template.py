@@ -32,7 +32,7 @@ class CustomPromptTemplate(Enum):
        - 손익계산서는 수주(매출액), 영업이익, 당기순이익(손실)을 확인해서 작성되어야함.
        - 손익계산서를 표시 할때는 매출연도, 수주(매출액), 영업이익, 당기순이익에 대한 {{thstrm_amount}} 값을 알려줘.
        - {{thstrm_amount}} 값은 #출력기준에 맞게 표시하면 돼.
-       - {{account_id}}에 제공받은 값은 아래 <example>에 언급된 단어는 모두 동일한 의미로 이해하면 돼.
+       - {{account_id}}에 제공받s은 값은 아래 <example>에 언급된 단어는 모두 동일한 의미로 이해하면 돼.
          <example>
             ifrs-full_Revenue = 수주(매출액) = 매출액 = 영업수익 = 매출및지분법손익 = 매출
             dart_OperatingIncomeLoss = 영업이익 = 영업이익(손실)
