@@ -53,13 +53,14 @@ def check_args(function, args):
 def run_conversation(user_input):
     # Step 1: send the conversation and available functions to GPT
     messages = []
+    messages.append({"role": "system", "content": "It works only if the company name is specified. And If there is no company name, do not call the function."})
     messages.append({"role": "user", "content": user_input})
     tools = [
         {
             "type": "function",
             "function": {
                 "name": "get_finance",
-                "description": "Be sure to analyze the company's financial information, excluding stock information.",
+                "description": "Be sure to analyze the company's financial information, excluding stock information. And It works only if the company name is specified.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -76,7 +77,7 @@ def run_conversation(user_input):
             "type": "function",
             "function": {
                 "name": "get_news",
-                "description": "Search and summarize stock news of a specific company.",
+                "description": "Search and summarize stock news of a specific company. And It works only if the company name is specified.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -93,7 +94,7 @@ def run_conversation(user_input):
             "type": "function",
             "function": {
                 "name": "get_stock",
-                "description": "Analyzing the stock price and status of a specific company",
+                "description": "Analyzing the stock price and status of a specific company.  And It works only if the company name is specified.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -114,8 +115,7 @@ def run_conversation(user_input):
         tools=tools,
         tool_choice="auto",
     )
-    #print(response)
-    
+    # print(response)
 
     response_message = response.choices[0].message
     tool_calls = response_message.tool_calls
@@ -135,12 +135,8 @@ def run_conversation(user_input):
         content = None
     else:
         function_name = None
-        company = None 
+        company = None
         content = response.choices[0].message.content
-
 
     return function_name, company, content
 
-
-msg = '안녕하세요'
-print(run_conversation(msg))
