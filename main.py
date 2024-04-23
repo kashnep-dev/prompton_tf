@@ -148,7 +148,7 @@ st.set_page_config(
     page_icon=":books:")
 
 st.write("")
-st.markdown("<h1 style='text-align: center;'>원하는 회사의 주식정보를</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center;'>원하는 회사의 금융정보를</h1>", unsafe_allow_html=True)
 st.markdown("<h1 style='text-align: center;'>일목요연하게</h1>", unsafe_allow_html=True)
 st.markdown("<h1 style='text-align: center;'>알려드립니다.</h1>", unsafe_allow_html=True)
 st.write("")
