@@ -202,10 +202,10 @@ if user_input := st.chat_input():
 
 if stt_button:
     stt_text = button_click()
-    print(stt_text.text)
-    st.session_state.messages.append(ChatMessage(role="user", content=stt_text.text))
+    print(stt_text)
+    st.session_state.messages.append(ChatMessage(role="user", content=stt_text))
 
-    main_chat(stt_text.text, True)
+    main_chat(stt_text, True)
 
 if st.session_state.get("last_run"):
     run_url = get_run_url(st.session_state.last_run)
