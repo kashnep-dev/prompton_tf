@@ -25,6 +25,8 @@ load_dotenv()
 # Langsmith 환경설정
 client, run_collector, cfg = ls_configure()
 
+def test():
+    print('test')
 
 # @st.cache_data(ttl="2h", show_spinner=False)
 def get_run_url(run_id):
@@ -146,7 +148,7 @@ st.set_page_config(
     page_icon=":books:")
 
 st.write("")
-st.markdown("<h1 style='text-align: center;'>원하는 회사의 주식정보를</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center;'>원하는 회사의 금융정보를</h1>", unsafe_allow_html=True)
 st.markdown("<h1 style='text-align: center;'>일목요연하게</h1>", unsafe_allow_html=True)
 st.markdown("<h1 style='text-align: center;'>알려드립니다.</h1>", unsafe_allow_html=True)
 st.write("")
@@ -200,10 +202,10 @@ if user_input := st.chat_input():
 
 if stt_button:
     stt_text = button_click()
-    print(stt_text)
-    st.session_state.messages.append(ChatMessage(role="user", content=stt_text))
+    print(stt_text.text)
+    st.session_state.messages.append(ChatMessage(role="user", content=stt_text.text))
 
-    main_chat(stt_text, True)
+    main_chat(stt_text.text, True)
 
 if st.session_state.get("last_run"):
     run_url = get_run_url(st.session_state.last_run)
