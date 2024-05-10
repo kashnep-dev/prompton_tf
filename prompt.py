@@ -4,7 +4,7 @@ import streamlit as st
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores import FAISS
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder, FewShotChatMessagePromptTemplate
 from langchain_openai import ChatOpenAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
@@ -23,25 +23,54 @@ class StreamHandler(BaseCallbackHandler):
 
 
 def get_prompt(template_type):
+    prompt_template = ''
+    prompt_instruction = ''
+
     if template_type == 'get_news':
-        return CustomPromptTemplate.NEWS_TEMPLATE.value
+        prompt_template = CustomPromptTemplate.NEWS_TEMPLATE_FEW_SHOT.value
+        prompt_instruction = CustomPromptTemplate.NEWS_TEMPLATE_INSTRUCTION.value
     elif template_type == 'get_finance':
-        return CustomPromptTemplate.FINANCE_TEMPLATE.value
+        prompt_template = CustomPromptTemplate.FINANCE_TEMPLATE_FEW_SHOT.value
+        prompt_instruction = CustomPromptTemplate.FINANCE_TEMPLATE_INSTRUCTION.value
     elif template_type == 'get_stock':
-        return CustomPromptTemplate.STOCK_INFO_TEMPLATE.value
+        prompt_template = CustomPromptTemplate.STOCK_INFO_TEMPLATE_FEW_SHOT.value
+        prompt_instruction = CustomPromptTemplate.STOCK_INFO_TEMPLATE_INSTRUCTION.value
     elif template_type == '증권약관 분석':
-        return CustomPromptTemplate.DOCUMENT_TEMPLATE.value
+        prompt_template = CustomPromptTemplate.DOCUMENT_TEMPLATE_FEW_SHOT.value
+        prompt_instruction = CustomPromptTemplate.DOCUMENT_TEMPLATE_INSTRUCTION.value
+
+    example_prompt = ChatPromptTemplate.from_messages(
+        [
+            ("human", "{question}:\n{context}"),
+            ("ai", "{answer}")
+        ]
+    )
+
+    few_shot_prompt = FewShotChatMessagePromptTemplate(
+        examples=prompt_template,
+        example_prompt=example_prompt,
+    )
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", prompt_instruction),
+            few_shot_prompt,
+            MessagesPlaceholder(variable_name="history"),
+            ("human", "{question}\n{context}"),
+        ]
+    )
+    return prompt
 
 
 def chain_with_api(template_type, model_name, temperature):
-    template = get_prompt(template_type)
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            ("system", template),
-            MessagesPlaceholder(variable_name="history"),
-            ("human", "{question}"),
-        ]
-    )
+    prompt = get_prompt(template_type)
+    # template = get_prompt(template_type)
+    # prompt = ChatPromptTemplate.from_messages(
+    #     [
+    #         ("system", template),
+    #         MessagesPlaceholder(variable_name="history"),
+    #         ("human", "{question}"),
+    #     ]
+    # )
     stream_handler = StreamHandler(st.empty())
     llm = ChatOpenAI(
         model=model_name,

@@ -53,7 +53,8 @@ def check_args(function, args):
 def run_conversation(user_input):
     # Step 1: send the conversation and available functions to GPT
     messages = []
-    messages.append({"role": "system", "content": "It works only if the company name is specified. And If there is no company name, do not call the function."})
+    messages.append({"role": "system",
+                     "content": "It works only if the company name is specified. And If there is no company name, do not call the function."})
     messages.append({"role": "user", "content": user_input})
     tools = [
         {
@@ -126,7 +127,9 @@ def run_conversation(user_input):
             if function_name not in available_functions:
                 return "Function " + function_name + " does not exist"
             fuction_to_call = available_functions[function_name]
+
         function_args = json.loads(tool_call.function.arguments)
+
         if check_args(fuction_to_call, function_args) is False:
             return "Invalid number of arguments for function: " + function_name
         function_response = fuction_to_call(**function_args)
@@ -139,4 +142,3 @@ def run_conversation(user_input):
         content = response.choices[0].message.content
 
     return function_name, company, content
-
