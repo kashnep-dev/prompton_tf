@@ -18,12 +18,17 @@ from function_calling import run_conversation
 from stt import button_click
 from tts import tts
 from predict import PatternFinder, get_company_code
+from custom_prompt_template import CustomPromptTemplate
 
 # 환경변수 로드
 load_dotenv()
 
 # Langsmith 환경설정
 client, run_collector, cfg = ls_configure()
+
+uploaded_file = None
+retriever, prompt = None, None
+search_type = None
 
 
 def test():
@@ -47,50 +52,28 @@ def main_chat(user_input, stt_tts, search_type):
         elif search_type == 'get_finance':
             search_result = search.search_by_dart_api(company)
         elif search_type == 'get_stock':
-            start_date = '2024-01-01'  # datetime.today().strftime("%Y-%m-01")
+            start_date = datetime.today().strftime("%Y-01-01")
             end_date = datetime.today().strftime("%Y-%m-%d")
-
-            print(company)
-            company_code_with_text = get_company_code(company)
-            print("company_code_with_text : " + company_code_with_text)
             company_code = search.item_code_by_item_name(company)
-            print(company_code)
-            # print("company_code[0] : " + company_code[0])
+            # print(company, " : " + company_code)
 
             p = PatternFinder()
             p.set_stock(company_code)
             result = p.search(start_date, end_date)
             pred = p.stat_prediction(result)
-            text = p.plot_pattern(result.index[1])
 
-            search_result = """
-                                우선
-                                {5}
-                                에서 (Date)→'날짜', (Open)→'시작가격', (High)→'최고가격', (Low)→'최저가격', (Close)→'종가', (Volume)→'거래량', (Change)→'등락률' 로 명칭을 수정하고,
-                                테두리가 있는 table 형태로 출력해줘.
-                                위 표는 {1}부터 {2}까지 {3}의 대한민국 주식장이 열린 날의 주식 가격이야.
-
-                                #최저가 : '종가' 열의 값들 중 가장 작은 값
-                                #최고가 : '종가' 열의 값들 중 가장 큰 값
-                                #평균가 : '종가' 열의 값들의 평균 값
-                                #현재가 : '종가' 열의 값들 중 마지막 날짜의 값
-
-                                앞으로 내가 묻는 질문에 넌 반드시 '종가' 열의 값들 중에서만 대답을 해야해.
-                                위 표를 기준으로, {1}부터 {2} 기간 동안 {3}의 [#최저가], [#최고가], [#평균가], [#현재가] 를 알려줘.
-                                그리고 {4}의 값에 따라 제일 마지막 라인에 한줄 띄고 아래 문장을 줄바꿈 하여 그대로 출력해줘.
-                                {4}의 값이 양수일 경우, '유사도 95%이상인 과거 차트에 대입시, 5일후 주가 전망은 {4} 상승할 예정입니다.'
-                                {4}의 값이 음수일 경우, '유사도 95%이상인 과거 차트에 대입시, 5일후 주가 전망은 {4} 하락할 예정입니다.'
-                                #[최저가]
-                            """.format(
-                search.get_monthly_close_price(company_code), start_date, end_date, company, str(text),
-                search.get_monthly_price(company_code))
-
+            plot_pattern = p.plot_pattern(result.index[1])
+            monthly_price = search.get_monthly_price(company_code)
+            search_result = CustomPromptTemplate.STOCK_INFO_CONTEXT.value.format(start_date, end_date, company,
+                                                                                 str(plot_pattern), monthly_price)
+            # print(search_result)
         st.session_state.messages.append(ChatMessage(role="user", content=user_input))
         st.chat_message("user").write(user_input)
 
         with st.chat_message("assistant"):
             stream_handler = pt.StreamHandler(st.empty())
             if company is None and search_type is None:
+                print("uploaded_file : ", uploaded_file)
                 if uploaded_file is not None:
                     llm = ChatOpenAI(
                         model=model_name,
@@ -145,7 +128,7 @@ def main_chat(user_input, stt_tts, search_type):
             st.session_state.messages.append(ChatMessage(role="assistant", content=response))
     else:
         print("hello")
-    st.session_state.last_run = run_collector.traced_runs[0].id
+    # st.session_state.last_run = run_collector.traced_runs[0].id
 
 
 st.set_page_config(
@@ -164,11 +147,7 @@ st.write("")
 msgs = StreamlitChatMessageHistory(key="langchain_messages")
 
 temperature = 0.0
-model_name = 'gpt-3.5-turbo-16k'
-
-uploaded_file = None
-retriever, prompt = None, None
-search_type = None
+model_name = 'gpt-4o'
 
 # sidebar 구성
 with st.sidebar as sidebar:
@@ -177,10 +156,9 @@ with st.sidebar as sidebar:
     search_type = st.selectbox('choose a chat type', ['Colabot', 'Trend News'])
     temperature = st.slider('temperature Range (0.0 ~ 1.0 )', 0.0, 1.0, 0.0)  # min, max, default
     model_name = st.selectbox('choose a model name', ['gpt-3.5-turbo-16k', 'gpt-4'])
-    # if st.session_state["select_event"] == '증권약관 분석':
     uploaded_file = st.sidebar.file_uploader("upload your pdf file", type=['pdf'])
     if uploaded_file:
-        search_type = '증권약관 분석'
+        search_type = 'Colabot'
         retriever, prompt = pt.make_prompt_by_file('증권약관 분석', uploaded_file)
     expander = st.expander("## About ")
     expander.write(""" 

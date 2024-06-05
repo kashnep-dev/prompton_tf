@@ -186,9 +186,7 @@ def get_monthly_close_price(company_code):
 
 
 def get_monthly_price(company_code):
-    print(fdr.DataReader(company_code, datetime.today().strftime("%Y-%m-01")))
-    return fdr.DataReader(company_code, datetime.today().strftime("%Y-%m-01"))
-
+    return fdr.DataReader(company_code, datetime.today().strftime("%Y-01-01"))
 
 # 올해 전체 가격
 def get_yearly_price(company_code):

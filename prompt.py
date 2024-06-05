@@ -63,14 +63,6 @@ def get_prompt(template_type):
 
 def chain_with_api(template_type, model_name, temperature):
     prompt = get_prompt(template_type)
-    # template = get_prompt(template_type)
-    # prompt = ChatPromptTemplate.from_messages(
-    #     [
-    #         ("system", template),
-    #         MessagesPlaceholder(variable_name="history"),
-    #         ("human", "{question}"),
-    #     ]
-    # )
     stream_handler = StreamHandler(st.empty())
     llm = ChatOpenAI(
         model=model_name,
@@ -92,10 +84,8 @@ def load_pdf(uploaded_file):
 
 
 def make_prompt_by_file(type, uploaded_file):
-    template = get_prompt(type)
+    prompt = get_prompt(type)
     docs = load_pdf(uploaded_file)
-
-    prompt = ChatPromptTemplate.from_template(template)
 
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=50)
     splits = text_splitter.split_documents(docs)
