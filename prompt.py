@@ -38,6 +38,9 @@ def get_prompt(template_type):
     elif template_type == '증권약관 분석':
         prompt_template = CustomPromptTemplate.DOCUMENT_TEMPLATE_FEW_SHOT.value
         prompt_instruction = CustomPromptTemplate.DOCUMENT_TEMPLATE_INSTRUCTION.value
+    elif template_type == 'trend_news':
+        prompt_template = CustomPromptTemplate.TREND_NEWS_TEMPLATE_FEW_SHOT.value
+        prompt_instruction = CustomPromptTemplate.TREND_NEWS_TEMPLATE_INSTRUCTION.value
 
     example_prompt = ChatPromptTemplate.from_messages(
         [
@@ -50,14 +53,23 @@ def get_prompt(template_type):
         examples=prompt_template,
         example_prompt=example_prompt,
     )
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            ("system", prompt_instruction),
-            few_shot_prompt,
-            MessagesPlaceholder(variable_name="history"),
-            ("human", "{question}\n{context}"),
-        ]
-    )
+    if template_type == '증권약관 분석':
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", prompt_instruction),
+                few_shot_prompt,
+                ("human", "{question}\n{context}"),
+            ]
+        )
+    else:
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", prompt_instruction),
+                few_shot_prompt,
+                MessagesPlaceholder(variable_name="history"),
+                ("human", "{question}\n{context}"),
+            ]
+        )
     return prompt
 
 
@@ -83,11 +95,11 @@ def load_pdf(uploaded_file):
     return docs
 
 
-def make_prompt_by_file(type, uploaded_file):
-    prompt = get_prompt(type)
+def make_prompt_by_file(search_type, uploaded_file):
+    prompt = get_prompt(search_type)
     docs = load_pdf(uploaded_file)
 
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=50)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=5000, chunk_overlap=500)
     splits = text_splitter.split_documents(docs)
 
     with st.status("파일을 처리 중입니다..", expanded=True) as status:

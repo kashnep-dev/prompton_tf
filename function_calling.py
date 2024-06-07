@@ -116,7 +116,6 @@ def run_conversation(user_input):
         tools=tools,
         tool_choice="auto",
     )
-    # print(response)
 
     response_message = response.choices[0].message
     tool_calls = response_message.tool_calls
@@ -126,13 +125,13 @@ def run_conversation(user_input):
             # verify function exists
             if function_name not in available_functions:
                 return "Function " + function_name + " does not exist"
-            fuction_to_call = available_functions[function_name]
+            function_to_call = available_functions[function_name]
 
         function_args = json.loads(tool_call.function.arguments)
 
-        if check_args(fuction_to_call, function_args) is False:
+        if check_args(function_to_call, function_args) is False:
             return "Invalid number of arguments for function: " + function_name
-        function_response = fuction_to_call(**function_args)
+        function_response = function_to_call(**function_args)
         company = json.loads(response_message.tool_calls[0].function.arguments)['company']
         function_name = response_message.tool_calls[0].function.name
         content = None

@@ -115,6 +115,35 @@ def search_by_naver_api(param):
         print("Error Code:" + rescode)
 
 
+def search_by_item(user_input: str) -> str:
+    """Naver에서 검색어로 뉴스를 검색하고 첫 번째 기사 내용을 반환합니다.
+
+        Args:
+            user_input (str): 검색어
+
+        Returns:
+            str: 첫 번째 뉴스 기사 내용 (없으면 빈 문자열)
+        """
+    encoded_text = urllib.parse.quote(user_input)
+    url = os.getenv("NAVER_SEARCH_ENDPOINT").format(encoded_text)
+
+    with requests.get(url) as response:  # with 문 사용
+        soup = BeautifulSoup(response.content, "html.parser")  # content 사용
+
+    first_news = soup.select_one("ul._infinite_list > li")
+    if first_news is None:
+        return "조회 결과가 없습니다"
+
+    link = first_news.select_one("a.news_tit")["href"]
+
+    with requests.get(link) as response_item:  # with 문 사용
+        soup_item = BeautifulSoup(response_item.content, "html.parser")  # content 사용
+
+    paragraphs = soup_item.select("article.story-news p")
+    article = "\n".join(p.get_text() for p in paragraphs[:-1])  # Generator 표현식 사용
+    return article
+
+
 # dart 재무정보 검색 API
 def search_by_dart_api(param):
     dart_api_key = os.getenv("DART_API_KEY")
@@ -139,7 +168,8 @@ def search_by_dart_api(param):
         result = OrderedDict()
         if is_json_key_present(json_str, 'list'):
             for el in json_str['list']:
-                if el['account_id'] == 'ifrs-full_Revenue' or el['account_id'] == 'ifrs-full_ProfitLoss' or el['account_id'] == 'dart_OperatingIncomeLoss':
+                if el['account_id'] == 'ifrs-full_Revenue' or el['account_id'] == 'ifrs-full_ProfitLoss' or el[
+                    'account_id'] == 'dart_OperatingIncomeLoss':
                     info_dict = OrderedDict()
                     if is_json_key_present(el, 'sj_nm'):
                         info_dict['bsns_year'] = el['bsns_year']
@@ -187,6 +217,7 @@ def get_monthly_close_price(company_code):
 
 def get_monthly_price(company_code):
     return fdr.DataReader(company_code, datetime.today().strftime("%Y-01-01"))
+
 
 # 올해 전체 가격
 def get_yearly_price(company_code):
