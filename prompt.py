@@ -38,7 +38,7 @@ def get_prompt(template_type):
     elif template_type == '증권약관 분석':
         prompt_template = CustomPromptTemplate.DOCUMENT_TEMPLATE_FEW_SHOT.value
         prompt_instruction = CustomPromptTemplate.DOCUMENT_TEMPLATE_INSTRUCTION.value
-    elif template_type == 'trend_news':
+    elif template_type == 'Trend News':
         prompt_template = CustomPromptTemplate.TREND_NEWS_TEMPLATE_FEW_SHOT.value
         prompt_instruction = CustomPromptTemplate.TREND_NEWS_TEMPLATE_INSTRUCTION.value
 
