@@ -101,7 +101,7 @@ def make_prompt_by_file(search_type, uploaded_file):
     prompt = get_prompt(search_type)
     docs = load_pdf(uploaded_file)
 
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=5000, chunk_overlap=500)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=6000, chunk_overlap=1000)
     splits = text_splitter.split_documents(docs)
 
     with st.status("파일을 처리 중입니다..", expanded=True) as status:
