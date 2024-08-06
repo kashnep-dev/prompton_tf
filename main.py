@@ -53,7 +53,7 @@ def handle_search_type(search_type, company):
     return ''
 
 
-def main_chat(user_input, stt_tts, search_type):
+def main_chat(user_input, stt_tts, search_type, model_name, temperature):
     if search_type == 'Colabot':
         search_type, company, content = run_conversation(user_input)
         search_result = handle_search_type(search_type, company)
@@ -71,7 +71,7 @@ def main_chat(user_input, stt_tts, search_type):
         #     chain = {"context": retriever, "question": RunnablePassthrough()} | prompt | llm
         #     response = chain.invoke(user_input).content
         # else:
-        chain = pt.chain_with_api(search_type, 'gpt-4o', 0)
+        chain = pt.chain_with_api(search_type, model_name, temperature)
         chain_with_history = RunnableWithMessageHistory(chain, lambda session_id: msgs, input_messages_key="question",
                                                         history_messages_key="history")
         response = chain_with_history.invoke({"question": user_input, "context": search_result}, cfg).content
@@ -87,7 +87,7 @@ def setup_sidebar():
         st.markdown('## Models and Parameters')
         search_type = st.selectbox('choose a chat type', ['Colabot', 'Trend News', 'gpt-4o'])
         temperature = st.slider('temperature Range (0.0 ~ 1.0 )', 0.0, 1.0, 0.0)
-        model_name = st.selectbox('choose a model name', ['gpt-4o', 'gpt-4'])
+        model_name = st.selectbox('choose a model name', ['gpt-4o-mini', 'gpt-4o', 'gpt-4'])
         uploaded_file = st.file_uploader("upload your pdf file", type=['pdf'])
         if uploaded_file:
             search_type = 'Colabot'
@@ -123,12 +123,12 @@ for msg in st.session_state.messages:
     st.chat_message(msg.role).write(msg.content)
 
 if user_input := st.chat_input():
-    main_chat(user_input, False, search_type)
+    main_chat(user_input, False, search_type, model_name, temperature)
 
 if stt_button:
     stt_text = button_click()
     st.session_state.messages.append(ChatMessage(role="user", content=stt_text))
-    main_chat(stt_text, True, search_type)
+    main_chat(stt_text, True, search_type, model_name, temperature)
 
 if st.session_state.get("last_run"):
     run_url = get_run_url(st.session_state.last_run)
