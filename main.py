@@ -85,7 +85,7 @@ def setup_sidebar():
     with st.sidebar:
         st.title(":books: :blue[ OO 증권]")
         st.markdown('## Models and Parameters')
-        search_type = st.selectbox('choose a chat type', ['Colabot', 'Trend News', 'gpt-4o'])
+        search_type = st.selectbox('choose a chat type', ['Colabot', 'Trend News', 'Chat GPT'])
         temperature = st.slider('temperature Range (0.0 ~ 1.0 )', 0.0, 1.0, 0.0)
         model_name = st.selectbox('choose a model name', ['gpt-4o-mini', 'gpt-4o', 'gpt-4'])
         uploaded_file = st.file_uploader("upload your pdf file", type=['pdf'])
