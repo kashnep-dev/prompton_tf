@@ -41,7 +41,9 @@ def get_prompt(template_type):
     elif template_type == 'Trend News':
         prompt_template = CustomPromptTemplate.TREND_NEWS_TEMPLATE_FEW_SHOT.value
         prompt_instruction = CustomPromptTemplate.TREND_NEWS_TEMPLATE_INSTRUCTION.value
-
+    else:
+        prompt_template = CustomPromptTemplate.CHAT_TEMPLATE_FEW_SHOT.value
+        prompt_instruction = CustomPromptTemplate.CHAT_TEMPLATE_INSTRUCTION.value
     example_prompt = ChatPromptTemplate.from_messages(
         [
             ("human", "{question}:\n{context}"),
@@ -66,7 +68,7 @@ def get_prompt(template_type):
             [
                 ("system", prompt_instruction),
                 few_shot_prompt,
-                MessagesPlaceholder(variable_name="history"),
+                # MessagesPlaceholder(variable_name="history"),
                 ("human", "{question}\n{context}"),
             ]
         )

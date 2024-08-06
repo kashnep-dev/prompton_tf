@@ -9,7 +9,7 @@ import FinanceDataReader as fdr
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
-
+import re
 
 def is_json_key_present(json, key):
     try:
@@ -114,7 +114,6 @@ def search_by_naver_api(param):
     else:
         print("Error Code:" + rescode)
 
-
 def search_by_item(user_input: str) -> str:
     """Naver에서 검색어로 뉴스를 검색하고 첫 번째 기사 내용을 반환합니다.
 
@@ -140,9 +139,13 @@ def search_by_item(user_input: str) -> str:
         soup_item = BeautifulSoup(response_item.content, "html.parser")  # content 사용
 
     paragraphs = soup_item.select("article.story-news p")
-    article = "\n".join(p.get_text() for p in paragraphs[:-1])  # Generator 표현식 사용
+    article = replace_email_with_spaces("\n".join(p.get_text() for p in paragraphs[:-1]))  # Generator 표현식 사용
+
     return article
 
+def replace_email_with_spaces(text):
+    # 정규표현식을 사용하여 이메일 주소와 대괄호 사이에 있는 문자열을 공백으로 치환
+    return re.sub(r'.+@.+\..+', ' ', re.sub(r'\[.*?\]', ' ', text))
 
 # dart 재무정보 검색 API
 def search_by_dart_api(param):
